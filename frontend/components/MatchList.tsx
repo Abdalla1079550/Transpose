@@ -32,8 +32,8 @@ export function MatchList({ matches, onGenerateOutreach, generatingForStudentId 
             <p className="match-rationale">{rationale}</p>
             {evidence.length > 0 && (
               <ul className="compact-list">
-                {evidence.slice(0, 3).map((line) => (
-                  <li key={line}>{line}</li>
+                {evidence.slice(0, 3).map((line, evidenceIndex) => (
+                  <li key={`${key}-evidence-${evidenceIndex}`}>{line}</li>
                 ))}
               </ul>
             )}
