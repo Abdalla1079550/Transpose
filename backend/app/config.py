@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 _BACKEND_DIR = Path(__file__).resolve().parents[1]
+_REPO_ROOT = _BACKEND_DIR.parent
 _DEFAULT_DB_URL = f"sqlite:///{_BACKEND_DIR / 'edgematch.db'}"
 
 
@@ -37,6 +38,21 @@ class Settings(BaseSettings):
     @classmethod
     def _clamp_cache_ttl(cls, value: int) -> int:
         return max(60, min(120, value))
+
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_database_url(cls, value: str) -> str:
+        if not value.startswith("sqlite:///"):
+            return value
+
+        raw_path = value[len("sqlite:///") :]
+        if raw_path == ":memory:":
+            return value
+
+        db_path = Path(raw_path)
+        if not db_path.is_absolute():
+            db_path = (_REPO_ROOT / db_path).resolve()
+        return f"sqlite:///{db_path}"
 
 
 @lru_cache(maxsize=1)

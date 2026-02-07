@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from pathlib import Path
 
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
@@ -8,6 +9,19 @@ from sqlmodel import Session, SQLModel, create_engine
 from .config import get_settings
 
 settings = get_settings()
+
+
+def _ensure_sqlite_parent_dir() -> None:
+    if not settings.database_url.startswith("sqlite:///"):
+        return
+    raw_path = settings.database_url[len("sqlite:///") :]
+    if raw_path == ":memory:":
+        return
+    db_path = Path(raw_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+
+_ensure_sqlite_parent_dir()
 connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 engine = create_engine(settings.database_url, connect_args=connect_args)
 
