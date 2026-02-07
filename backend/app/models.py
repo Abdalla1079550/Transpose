@@ -12,10 +12,15 @@ def utc_now() -> datetime:
 class Student(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
+    full_name: str | None = None
     email: str | None = None
+    location: str | None = None
     region_pref: str | None = None
     grad_year: int | None = None
+    skills_csv: str = ""
     cv_text: str = ""
+    cv_filename: str | None = None
+    interview_notes: str = ""
     interview_answers_json: str = "[]"
     skills_json: str = "[]"
     card_json: str | None = None
@@ -26,8 +31,11 @@ class Student(SQLModel, table=True):
 class RoleQuery(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str
+    description: str | None = None
+    location: str | None = None
     region: str | None = None
     raw_desc: str | None = None
+    must_have_skills_csv: str = ""
     skills_must_json: str = "[]"
     min_grad_year: int | None = None
     max_grad_year: int | None = None
@@ -38,6 +46,7 @@ class RoleQuery(SQLModel, table=True):
 
 class Match(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    role_id: int | None = None
     role_query_id: int = Field(index=True, foreign_key="rolequery.id")
     student_id: int = Field(index=True, foreign_key="student.id")
     score: float = 0.0

@@ -71,10 +71,15 @@ def bootstrap_demo_dataset(
 
         student = Student(
             name=str(item.get("name") or "Unnamed Candidate"),
+            full_name=str(item.get("name") or "Unnamed Candidate"),
             email=str(item.get("email") or ""),
+            location=str(item.get("region_pref") or "AE"),
             region_pref=str(item.get("region_pref") or "AE"),
             grad_year=int(item.get("grad_year") or 2026),
+            skills_csv=",".join(skills),
             cv_text=str(item.get("cv_text") or ""),
+            cv_filename="seeded_profile.txt",
+            interview_notes="",
             interview_answers_json=json.dumps(interview_answers, ensure_ascii=True),
             skills_json=json.dumps(skills, ensure_ascii=True),
             updated_at=datetime.now(UTC),
@@ -96,8 +101,11 @@ def bootstrap_demo_dataset(
         must = [str(skill).strip().lower() for skill in item.get("skills_must", []) if str(skill).strip()]
         role = RoleQuery(
             title=str(item.get("title") or "Untitled Role"),
+            description=str(item.get("raw_desc") or ""),
+            location=str(item.get("region") or "AE"),
             region=str(item.get("region") or "AE"),
             raw_desc=str(item.get("raw_desc") or ""),
+            must_have_skills_csv=",".join(must),
             skills_must_json=json.dumps(must, ensure_ascii=True),
             min_grad_year=int(item.get("min_grad_year") or 2025),
             max_grad_year=int(item.get("max_grad_year") or 2028),
@@ -114,6 +122,7 @@ def bootstrap_demo_dataset(
         for student in created_students:
             computed = compute_match(role=role, student=student, openai_helper=openai_helper)
             match = Match(
+                role_id=role.id or 0,
                 role_query_id=role.id or 0,
                 student_id=student.id or 0,
                 score=computed.score,

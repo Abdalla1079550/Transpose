@@ -58,9 +58,14 @@ def _run_sqlite_compat_migrations() -> None:
     with Session(engine) as session:
         if _table_exists(session, "student"):
             _add_column_if_missing(session, "student", "name", "TEXT", "''")
+            _add_column_if_missing(session, "student", "full_name", "TEXT")
+            _add_column_if_missing(session, "student", "location", "TEXT")
             _add_column_if_missing(session, "student", "region_pref", "TEXT")
+            _add_column_if_missing(session, "student", "skills_csv", "TEXT", "''")
             _add_column_if_missing(session, "student", "interview_answers_json", "TEXT", "'[]'")
+            _add_column_if_missing(session, "student", "interview_notes", "TEXT", "''")
             _add_column_if_missing(session, "student", "skills_json", "TEXT", "'[]'")
+            _add_column_if_missing(session, "student", "cv_filename", "TEXT")
             _add_column_if_missing(session, "student", "card_json", "TEXT")
             columns = _sqlite_columns(session, "student")
             if "full_name" in columns:
@@ -77,10 +82,34 @@ def _run_sqlite_compat_migrations() -> None:
                         "WHERE location IS NOT NULL"
                     )
                 )
+            if "name" in columns:
+                session.exec(
+                    text(
+                        "UPDATE student SET full_name = COALESCE(full_name, name) "
+                        "WHERE name IS NOT NULL"
+                    )
+                )
+            if "skills_json" in columns:
+                session.exec(
+                    text(
+                        "UPDATE student SET skills_csv = COALESCE(skills_csv, '') "
+                        "WHERE skills_csv IS NULL"
+                    )
+                )
+            if "interview_answers_json" in columns:
+                session.exec(
+                    text(
+                        "UPDATE student SET interview_notes = COALESCE(interview_notes, '') "
+                        "WHERE interview_notes IS NULL"
+                    )
+                )
 
         if _table_exists(session, "rolequery"):
+            _add_column_if_missing(session, "rolequery", "description", "TEXT")
+            _add_column_if_missing(session, "rolequery", "location", "TEXT")
             _add_column_if_missing(session, "rolequery", "region", "TEXT")
             _add_column_if_missing(session, "rolequery", "raw_desc", "TEXT")
+            _add_column_if_missing(session, "rolequery", "must_have_skills_csv", "TEXT", "''")
             _add_column_if_missing(session, "rolequery", "skills_must_json", "TEXT", "'[]'")
             _add_column_if_missing(session, "rolequery", "max_grad_year", "INTEGER")
             _add_column_if_missing(session, "rolequery", "source_job_id", "TEXT")
@@ -100,8 +129,16 @@ def _run_sqlite_compat_migrations() -> None:
                         "WHERE description IS NOT NULL"
                     )
                 )
+            if "must_have_skills_csv" in columns:
+                session.exec(
+                    text(
+                        "UPDATE rolequery SET must_have_skills_csv = COALESCE(must_have_skills_csv, '') "
+                        "WHERE must_have_skills_csv IS NULL"
+                    )
+                )
 
         if _table_exists(session, "match"):
+            _add_column_if_missing(session, "match", "role_id", "INTEGER")
             _add_column_if_missing(session, "match", "role_query_id", "INTEGER")
             _add_column_if_missing(session, "match", "evidence_json", "TEXT", "'[]'")
             _add_column_if_missing(session, "match", "gap_flags_json", "TEXT", "'[]'")

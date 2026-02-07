@@ -238,10 +238,15 @@ def create_student(
 
     student = Student(
         name=candidate_name,
+        full_name=candidate_name,
         email=email,
+        location=(region_pref or location),
         region_pref=(region_pref or location),
         grad_year=grad_year,
+        skills_csv=",".join(merged_skills),
         cv_text=cv_text,
+        cv_filename=cv.filename,
+        interview_notes="",
         skills_json=json.dumps(merged_skills, ensure_ascii=True),
         updated_at=datetime.now(UTC),
     )
@@ -264,6 +269,10 @@ def save_interview(
 
     normalized = _parse_answers(payload)
     student.interview_answers_json = json.dumps(normalized, ensure_ascii=True)
+    student.interview_notes = "\n".join(
+        f"{item.get('question', 'response')}: {item.get('answer', '')}"
+        for item in normalized
+    )[:4000]
     student.updated_at = datetime.now(UTC)
     session.add(student)
     session.commit()
@@ -318,8 +327,11 @@ def create_role(payload: RoleCreateRequest, session: Session = Depends(get_sessi
 
     role = RoleQuery(
         title=title,
+        description=(payload.raw_desc or payload.description),
+        location=(payload.region or payload.location),
         region=(payload.region or payload.location),
         raw_desc=(payload.raw_desc or payload.description),
+        must_have_skills_csv=",".join([skill.strip().lower() for skill in skills if skill.strip()]),
         skills_must_json=json.dumps([skill.strip().lower() for skill in skills if skill.strip()], ensure_ascii=True),
         min_grad_year=payload.min_grad_year,
         max_grad_year=payload.max_grad_year,
@@ -353,8 +365,9 @@ def role_matches(
             select(Match).where(Match.role_query_id == role_id).where(Match.student_id == (student.id or -1))
         ).first()
         if not existing:
-            existing = Match(role_query_id=role_id, student_id=student.id or 0)
+            existing = Match(role_id=role_id, role_query_id=role_id, student_id=student.id or 0)
 
+        existing.role_id = role_id
         existing.score = computed.score
         existing.hard_filter_passed = computed.hard_filter_passed
         existing.rationale = computed.rationale
