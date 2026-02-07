@@ -1,0 +1,37 @@
+{
+  "companies": [
+    {
+      "name": "Atlas Retail Analytics",
+      "website": "atlasretail.ai",
+      "industry": "Retail Analytics",
+      "location": "United States",
+      "hiring_signal": "Active data analyst openings"
+    },
+    {
+      "name": "Northstar Logistics",
+      "website": "northstarlogistics.com",
+      "industry": "Logistics",
+      "location": "United States",
+      "hiring_signal": "Expanding operations team"
+    },
+    {
+      "name": "CivicGrid Health",
+      "website": "civicgridhealth.com",
+      "industry": "Health Tech",
+      "location": "United States",
+      "hiring_signal": "Building decision intelligence unit"
+    }
+  ],
+  "news": [
+    {
+      "title": "US mid-market firms increase analyst hiring",
+      "url": "https://example.com/news/us-analyst-hiring",
+      "snippet": "Hiring demand remains strong in operations, healthcare, and retail analytics."
+    },
+    {
+      "title": "Data roles prioritize SQL and BI skills",
+      "url": "https://example.com/news/sql-bi-demand",
+      "snippet": "Recruiters report higher pass rates for candidates with portfolio-ready dashboards."
+    }
+  ]
+}
