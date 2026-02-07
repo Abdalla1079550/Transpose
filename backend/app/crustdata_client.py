@@ -71,7 +71,24 @@ class CrustDataClient:
         return self._request("GET", "/screener/company", params=params, preferred_scheme="token")
 
     def post_company_search(self, filters: list[dict[str, Any]], page: int = 1) -> dict[str, Any]:
-        body = {"filters": filters, "page": page}
+        normalized_filters: list[dict[str, Any]] = []
+        for item in filters:
+            filter_type = item.get("filter_type") or item.get("type")
+            filter_kind = item.get("type")
+            if filter_kind in {"REGION", "INDUSTRY", "JOB_OPPORTUNITIES", "KEYWORD"}:
+                filter_kind = None
+            if not filter_kind:
+                filter_kind = item.get("op") or item.get("operator") or "in"
+            value = item.get("value", [])
+            normalized_filters.append(
+                {
+                    "filter_type": filter_type,
+                    "type": filter_kind,
+                    "value": value,
+                }
+            )
+
+        body = {"filters": normalized_filters, "page": page}
         return self._request("POST", "/screener/company/search", json_body=body, preferred_scheme="bearer")
 
     def post_web_search(

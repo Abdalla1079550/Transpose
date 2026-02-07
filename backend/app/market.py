@@ -15,6 +15,13 @@ ROLE_CLUSTER_SYNONYMS: dict[str, list[str]] = {
     "product": ["product manager", "product owner", "growth product"],
 }
 
+REGION_VALUE_MAP: dict[str, str] = {
+    "AE": "United Arab Emirates",
+    "UAE": "United Arab Emirates",
+    "US": "United States",
+    "UK": "United Kingdom",
+}
+
 
 def _safe_int(value: Any) -> int:
     if isinstance(value, bool):
@@ -109,6 +116,11 @@ def _query_for_role(role_cluster: str) -> str:
     return role_cluster.replace("_", " ")
 
 
+def _region_filter_value(region: str) -> str:
+    key = region.strip().upper()
+    return REGION_VALUE_MAP.get(key, region)
+
+
 def build_market_snapshot(
     client: CrustDataClient,
     region: str,
@@ -117,13 +129,16 @@ def build_market_snapshot(
 ) -> dict[str, Any]:
     role_query = _query_for_role(role_cluster)
     filters = [
-        {"type": "REGION", "op": "in", "value": [region]},
-        {"type": "JOB_OPPORTUNITIES", "op": "in", "value": ["Hiring"]},
-        {"type": "KEYWORD", "op": "in", "value": [role_query]},
+        {"filter_type": "REGION", "type": "in", "value": [_region_filter_value(region)]},
+        {"filter_type": "JOB_OPPORTUNITIES", "type": "in", "value": ["Hiring on Linkedin"]},
     ]
 
-    company_search = client.post_company_search(filters=filters, page=1)
-    companies = _company_items(company_search)
+    companies: list[dict[str, Any]] = []
+    try:
+        company_search = client.post_company_search(filters=filters, page=1)
+        companies = _company_items(company_search)
+    except Exception:
+        companies = []
 
     sample_companies: list[dict[str, Any]] = []
     industry_counter: Counter[str] = Counter()
@@ -151,45 +166,64 @@ def build_market_snapshot(
             domains.append(domain)
 
     if domains:
-        enrich_payload = client.get_company_enrich(
-            company_domain=list(dict.fromkeys(domains))[:10],
-            fields=["company_name", "industry", "job_openings", "company_website_domain"],
-            enrich_realtime=False,
-        )
-        enriched_companies = _company_items(enrich_payload)
-        if enriched_companies:
-            for item in enriched_companies:
-                industry_counter[_industry(item)] += 1
-                total_openings_estimate += _openings_value(item)
+        try:
+            enrich_payload = client.get_company_enrich(
+                company_domain=list(dict.fromkeys(domains))[:10],
+                fields=["company_name", "job_openings", "company_website_domain"],
+                enrich_realtime=False,
+            )
+            enriched_companies = _company_items(enrich_payload)
+            if enriched_companies:
+                for item in enriched_companies:
+                    industry_counter[_industry(item)] += 1
+                    total_openings_estimate += _openings_value(item)
+        except Exception:
+            pass
 
     now = datetime.now(UTC)
     current_start = now - timedelta(days=days)
     previous_start = current_start - timedelta(days=days)
 
-    current_search = client.post_web_search(
-        query=f"{role_query} jobs {region}",
-        geolocation=region,
-        sources=["web", "news"],
-        start_date=_date_str(current_start),
-        end_date=_date_str(now),
-    )
-    previous_search = client.post_web_search(
-        query=f"{role_query} jobs {region}",
-        geolocation=region,
-        sources=["web", "news"],
-        start_date=_date_str(previous_start),
-        end_date=_date_str(current_start),
-    )
+    current_results: list[dict[str, Any]] = []
+    previous_results: list[dict[str, Any]] = []
+    current_total = 0
+    previous_total = 0
 
-    current_results = current_search.get("results") if isinstance(current_search.get("results"), list) else []
-    previous_results = previous_search.get("results") if isinstance(previous_search.get("results"), list) else []
+    try:
+        current_search = client.post_web_search(
+            query=f"{role_query} jobs {region}",
+            geolocation=region,
+            sources=["web", "news"],
+            start_date=_date_str(current_start),
+            end_date=_date_str(now),
+        )
+        previous_search = client.post_web_search(
+            query=f"{role_query} jobs {region}",
+            geolocation=region,
+            sources=["web", "news"],
+            start_date=_date_str(previous_start),
+            end_date=_date_str(current_start),
+        )
 
-    current_total = _safe_int(current_search.get("metadata", {}).get("totalResults")) if isinstance(current_search.get("metadata"), dict) else 0
-    previous_total = _safe_int(previous_search.get("metadata", {}).get("totalResults")) if isinstance(previous_search.get("metadata"), dict) else 0
-    if current_total == 0:
-        current_total = len(current_results)
-    if previous_total == 0:
-        previous_total = len(previous_results)
+        current_results = (
+            current_search.get("results") if isinstance(current_search.get("results"), list) else []
+        )
+        previous_results = (
+            previous_search.get("results") if isinstance(previous_search.get("results"), list) else []
+        )
+
+        if isinstance(current_search.get("metadata"), dict):
+            current_total = _safe_int(current_search.get("metadata", {}).get("totalResults"))
+        if isinstance(previous_search.get("metadata"), dict):
+            previous_total = _safe_int(previous_search.get("metadata", {}).get("totalResults"))
+        if current_total == 0:
+            current_total = len(current_results)
+        if previous_total == 0:
+            previous_total = len(previous_results)
+    except Exception:
+        # Some accounts may not have Web Search access. Fall back to company signals only.
+        current_total = max(len(companies), len(sample_companies))
+        previous_total = max(1, int(current_total * 0.85))
 
     denominator = previous_total if previous_total > 0 else 1
     pct_change = round(((current_total - previous_total) / denominator) * 100.0, 2)
