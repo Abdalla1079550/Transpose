@@ -1,4 +1,17 @@
 {
-  "status": "demo-auth-ok",
-  "note": "DEMO_MODE is enabled, so no live Crustdata call was made."
+  "selected_scheme": "mixed",
+  "checks": [
+    {
+      "path": "/screener/company",
+      "preferred": "token",
+      "token": "ok",
+      "bearer": "CrustDataAuthError"
+    },
+    {
+      "path": "/screener/company/search",
+      "preferred": "bearer",
+      "token": "CrustDataPermissionError",
+      "bearer": "ok"
+    }
+  ]
 }

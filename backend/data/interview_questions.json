@@ -1,9 +1,14 @@
 {
   "questions": [
-    "Tell me about a project where you turned messy data into a clear recommendation.",
-    "How do you validate data quality before sharing analysis with stakeholders?",
-    "Describe a time you had to explain a technical result to a non-technical audience.",
-    "What SQL optimization technique have you used in practice?",
-    "Which business metric do you think teams often misinterpret, and why?"
+    {"id": "target_role", "prompt": "Target role cluster(s)"},
+    {"id": "location_pref", "prompt": "Location preference (UAE / remote / anywhere)"},
+    {"id": "graduation_year", "prompt": "Graduation year"},
+    {"id": "work_auth", "prompt": "Work authorization and availability timeline"},
+    {"id": "behavior_achievement", "prompt": "Describe a recent achievement and measurable impact"},
+    {"id": "behavior_conflict", "prompt": "Describe a conflict and how you resolved it"},
+    {"id": "technical_project", "prompt": "Describe your best technical or product project"},
+    {"id": "technical_bug", "prompt": "Describe the hardest bug/problem you solved"},
+    {"id": "learning_speed", "prompt": "What new skill did you learn recently and how fast?"},
+    {"id": "salary_expectation", "prompt": "Optional: salary expectation"}
   ]
 }

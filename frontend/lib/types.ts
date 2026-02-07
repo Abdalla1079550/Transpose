@@ -1,7 +1,8 @@
 export type Mode = "live" | "demo" | "unknown";
 
 export interface HealthResponse {
-  status?: string;
+  ok?: boolean;
+  service?: string;
   mode?: string;
   demo_mode?: boolean | number | string;
   data_source?: string;
@@ -11,6 +12,18 @@ export interface HealthResponse {
 }
 
 export interface MarketSnapshotResponse {
+  role_cluster?: string;
+  region?: string;
+  window_days?: number;
+  total_openings_estimate?: number;
+  trend?: {
+    current_window?: number;
+    previous_window?: number;
+    pct_change?: number;
+  };
+  top_industries?: Array<{ industry?: string; count?: number }>;
+  top_skills?: Array<{ skill?: string; count?: number }>;
+  listings_or_companies_sample?: unknown[];
   mode?: string;
   demo_mode?: boolean | number | string;
   data_source?: string;
@@ -31,6 +44,12 @@ export interface MetricItem {
 }
 
 export interface CandidateCardData {
+  candidate?: {
+    name?: string;
+    email?: string;
+    region_pref?: string;
+    grad_year?: string | number;
+  };
   name?: string;
   full_name?: string;
   candidate_name?: string;
@@ -42,18 +61,32 @@ export interface CandidateCardData {
   summary?: string;
   rationale?: string;
   skills?: string[];
+  normalized_skill_list?: string[];
+  role_fit_suggestions?: string[];
   strengths?: string[];
+  gaps?: string[];
+  improvements?: string[];
+  market_context?: {
+    region?: string;
+    hiring_now_estimate?: number;
+    top_market_skills?: string[];
+    citation?: string;
+  };
   [key: string]: unknown;
 }
 
 export interface MatchData {
   id?: string | number;
   student_id?: string | number;
+  student_name?: string;
   name?: string;
   candidate_name?: string;
   score?: number | string;
   rationale?: string;
   skills?: string[];
+  evidence?: string[];
+  gap_flags?: string[];
+  hard_filter_passed?: boolean;
   location?: string;
   [key: string]: unknown;
 }

@@ -14,6 +14,7 @@ import {
 import type { CandidateCardData } from "@/lib/types";
 
 type GenericRecord = Record<string, unknown>;
+type QuestionItem = { id: string; prompt: string };
 
 function asRecord(value: unknown): GenericRecord | null {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -37,28 +38,32 @@ function extractId(payload: GenericRecord): string | null {
   return null;
 }
 
-function extractQuestions(payload: GenericRecord): string[] {
-  const questions = payload.questions;
-  if (Array.isArray(questions)) {
-    return questions
-      .map((item) => (typeof item === "string" ? item : ""))
-      .filter(Boolean);
+function extractQuestions(payload: GenericRecord): QuestionItem[] {
+  const raw = payload.questions;
+  if (!Array.isArray(raw)) {
+    return [];
   }
 
-  const items = payload.items;
-  if (Array.isArray(items)) {
-    return items
-      .map((item) => {
-        if (typeof item === "string") {
-          return item;
-        }
-        const record = asRecord(item);
-        return typeof record?.question === "string" ? record.question : "";
-      })
-      .filter(Boolean);
-  }
-
-  return [];
+  return raw
+    .map((item, index): QuestionItem | null => {
+      if (typeof item === "string") {
+        return { id: `q_${index + 1}`, prompt: item };
+      }
+      const record = asRecord(item);
+      if (!record) {
+        return null;
+      }
+      const prompt =
+        (typeof record.prompt === "string" && record.prompt) ||
+        (typeof record.question === "string" && record.question) ||
+        "";
+      if (!prompt) {
+        return null;
+      }
+      const id = (typeof record.id === "string" && record.id) || `q_${index + 1}`;
+      return { id, prompt };
+    })
+    .filter((item): item is QuestionItem => item !== null);
 }
 
 function extractCard(payload: GenericRecord): CandidateCardData | null {
@@ -75,15 +80,15 @@ function extractCard(payload: GenericRecord): CandidateCardData | null {
 export default function StudentPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState("AE");
   const [gradYear, setGradYear] = useState("");
   const [targetRole, setTargetRole] = useState("data_analyst");
   const [skills, setSkills] = useState("");
   const [cvFile, setCvFile] = useState<File | null>(null);
 
   const [studentId, setStudentId] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<string[]>([]);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [questions, setQuestions] = useState<QuestionItem[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [candidateCard, setCandidateCard] = useState<CandidateCardData | null>(null);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -102,17 +107,18 @@ export default function StudentPage() {
     setCardError(null);
     setCandidateCard(null);
 
-    const formData = new FormData();
-    formData.append("full_name", fullName);
-    formData.append("email", email);
-    formData.append("location", location);
-    formData.append("grad_year", gradYear);
-    formData.append("target_role", targetRole);
-    formData.append("skills", skills);
-    if (cvFile) {
-      formData.append("cv", cvFile);
-      formData.append("cv_file", cvFile);
+    if (!cvFile) {
+      setUploadError("Upload a PDF or DOCX CV to continue.");
+      return;
     }
+
+    const formData = new FormData();
+    formData.append("name", fullName);
+    formData.append("email", email);
+    formData.append("region_pref", location);
+    formData.append("grad_year", gradYear);
+    formData.append("skills", skills);
+    formData.append("cv", cvFile);
 
     setUploading(true);
     const result = await createStudent(formData);
@@ -199,9 +205,10 @@ export default function StudentPage() {
 
     const payload = {
       role_cluster: targetRole,
-      answers: questions.map((question, index) => ({
-        question,
-        answer: answers[index] || ""
+      location_preference: location,
+      answers: questions.map((question) => ({
+        question: question.prompt,
+        answer: answers[question.id] || ""
       }))
     };
 
@@ -220,8 +227,8 @@ export default function StudentPage() {
     if (questions.length === 0) {
       return "0/0";
     }
-    const completed = questions.reduce((count, _, index) => {
-      return answers[index]?.trim() ? count + 1 : count;
+    const completed = questions.reduce((count, question) => {
+      return answers[question.id]?.trim() ? count + 1 : count;
     }, 0);
     return `${completed}/${questions.length}`;
   }, [answers, questions]);
@@ -257,12 +264,8 @@ export default function StudentPage() {
             />
           </label>
           <label className="field">
-            Location
-            <input
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              placeholder="New York, NY"
-            />
+            Region preference
+            <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="AE" />
           </label>
           <label className="field">
             Grad year
@@ -292,7 +295,7 @@ export default function StudentPage() {
             CV upload
             <input
               type="file"
-              accept=".pdf,.doc,.docx,.txt"
+              accept=".pdf,.doc,.docx"
               onChange={(event) => setCvFile(event.target.files?.[0] || null)}
             />
           </label>
@@ -319,15 +322,15 @@ export default function StudentPage() {
         {questions.length > 0 && (
           <div className="question-stack">
             {questions.map((question, index) => (
-              <label key={`${index}-${question}`} className="field">
-                Q{index + 1}. {question}
+              <label key={question.id} className="field">
+                Q{index + 1}. {question.prompt}
                 <textarea
                   rows={3}
-                  value={answers[index] || ""}
+                  value={answers[question.id] || ""}
                   onChange={(event) =>
                     setAnswers((prev) => ({
                       ...prev,
-                      [index]: event.target.value
+                      [question.id]: event.target.value
                     }))
                   }
                   placeholder="Add concise, evidence-based answer"

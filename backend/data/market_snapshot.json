@@ -1,37 +1,50 @@
 {
-  "companies": [
+  "role_cluster": "data_analyst",
+  "region": "UAE",
+  "window_days": 7,
+  "total_openings_estimate": 148,
+  "listings_or_companies_sample": [
     {
-      "name": "Atlas Retail Analytics",
-      "website": "atlasretail.ai",
-      "industry": "Retail Analytics",
-      "location": "United States",
-      "hiring_signal": "Active data analyst openings"
+      "company_name": "Noon",
+      "industry": "E-commerce",
+      "openings_estimate": 22,
+      "location": "Dubai",
+      "website": "noon.com"
     },
     {
-      "name": "Northstar Logistics",
-      "website": "northstarlogistics.com",
-      "industry": "Logistics",
-      "location": "United States",
-      "hiring_signal": "Expanding operations team"
+      "company_name": "Careem",
+      "industry": "Mobility",
+      "openings_estimate": 16,
+      "location": "Dubai",
+      "website": "careem.com"
     },
     {
-      "name": "CivicGrid Health",
-      "website": "civicgridhealth.com",
-      "industry": "Health Tech",
-      "location": "United States",
-      "hiring_signal": "Building decision intelligence unit"
+      "company_name": "ADNOC",
+      "industry": "Energy",
+      "openings_estimate": 12,
+      "location": "Abu Dhabi",
+      "website": "adnoc.ae"
     }
   ],
-  "news": [
-    {
-      "title": "US mid-market firms increase analyst hiring",
-      "url": "https://example.com/news/us-analyst-hiring",
-      "snippet": "Hiring demand remains strong in operations, healthcare, and retail analytics."
-    },
-    {
-      "title": "Data roles prioritize SQL and BI skills",
-      "url": "https://example.com/news/sql-bi-demand",
-      "snippet": "Recruiters report higher pass rates for candidates with portfolio-ready dashboards."
-    }
-  ]
+  "trend": {
+    "current_window": 148,
+    "previous_window": 119,
+    "pct_change": 24.37
+  },
+  "top_industries": [
+    {"industry": "E-commerce", "count": 12},
+    {"industry": "Financial Services", "count": 9},
+    {"industry": "Energy", "count": 6}
+  ],
+  "top_skills": [
+    {"skill": "SQL", "count": 44},
+    {"skill": "Python", "count": 39},
+    {"skill": "Power BI", "count": 31},
+    {"skill": "Excel", "count": 27},
+    {"skill": "Tableau", "count": 21}
+  ],
+  "data_source": "Crustdata (cached demo sample)",
+  "mode": "demo",
+  "updated_at_epoch_ms": 1738947600000,
+  "updated_at": "2026-02-07T09:00:00Z"
 }

@@ -6,14 +6,22 @@ interface CandidateCardProps {
 }
 
 export function CandidateCard({ card }: CandidateCardProps) {
-  const name = card.full_name || card.candidate_name || card.name || "Unnamed candidate";
-  const role = card.target_role || card.role || "Role pending";
-  const location = typeof card.location === "string" ? card.location : "Location pending";
-  const score = formatNumber(card.score);
-  const summary = typeof card.summary === "string" ? card.summary : undefined;
-  const rationale = typeof card.rationale === "string" ? card.rationale : undefined;
+  const nestedCandidate = card.candidate || {};
+  const name =
+    nestedCandidate.name || card.full_name || card.candidate_name || card.name || "Unnamed candidate";
+  const roleFit = asStringArray(card.role_fit_suggestions);
+  const topSkills = asStringArray(card.normalized_skill_list).slice(0, 15);
   const strengths = asStringArray(card.strengths);
-  const skills = asStringArray(card.skills);
+  const gaps = asStringArray(card.gaps);
+  const improvements = asStringArray(card.improvements);
+  const marketTop = asStringArray(card.market_context?.top_market_skills);
+
+  const region =
+    nestedCandidate.region_pref ||
+    (card.market_context && typeof card.market_context.region === "string" ? card.market_context.region : "N/A");
+  const gradYear = nestedCandidate.grad_year || card.grad_year || "N/A";
+  const hiringNow = card.market_context?.hiring_now_estimate;
+  const citation = card.market_context?.citation;
 
   return (
     <article className="candidate-card">
@@ -21,18 +29,18 @@ export function CandidateCard({ card }: CandidateCardProps) {
         <div>
           <p className="candidate-name">{name}</p>
           <p className="candidate-meta">
-            {role} · {location}
+            Region {region} · Grad {String(gradYear)}
           </p>
         </div>
-        <p className="candidate-score">{score}</p>
+        <p className="candidate-score">{formatNumber(hiringNow)}</p>
       </header>
 
-      {summary && <p className="candidate-summary">{summary}</p>}
-      {rationale && <p className="candidate-rationale">{rationale}</p>}
+      {roleFit.length > 0 && <p className="candidate-summary">Role fit: {roleFit.slice(0, 5).join(", ")}</p>}
+      {citation && <p className="candidate-rationale">{citation}</p>}
 
-      {skills.length > 0 && (
+      {topSkills.length > 0 && (
         <div className="chip-row">
-          {skills.map((skill) => (
+          {topSkills.map((skill) => (
             <span key={skill} className="chip">
               {skill}
             </span>
@@ -46,6 +54,26 @@ export function CandidateCard({ card }: CandidateCardProps) {
             <li key={strength}>{strength}</li>
           ))}
         </ul>
+      )}
+
+      {gaps.length > 0 && (
+        <ul className="compact-list">
+          {gaps.slice(0, 3).map((gap) => (
+            <li key={gap}>{gap}</li>
+          ))}
+        </ul>
+      )}
+
+      {improvements.length > 0 && (
+        <ul className="compact-list">
+          {improvements.slice(0, 3).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      )}
+
+      {marketTop.length > 0 && (
+        <p className="candidate-meta">Market top skills: {marketTop.slice(0, 5).join(", ")}</p>
       )}
     </article>
   );

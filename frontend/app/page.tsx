@@ -6,7 +6,7 @@ import { MetricTile } from "@/components/MetricTile";
 import { ModeIndicator } from "@/components/ModeIndicator";
 import { SurfaceCard } from "@/components/SurfaceCard";
 import { BACKEND_URL, getDemoCached, getHealth, getMarketSnapshot } from "@/lib/api";
-import { formatDateTime, formatNumber, toHeadline } from "@/lib/format";
+import { formatDateTime, formatNumber } from "@/lib/format";
 import type { HealthResponse, MetricItem, Mode } from "@/lib/types";
 
 type SnapshotRecord = Record<string, unknown>;
@@ -29,11 +29,18 @@ function resolveSnapshotPayload(value: unknown): SnapshotRecord {
   if (!record) {
     return {};
   }
-  for (const key of ["market_snapshot", "snapshot", "market"]) {
-    const nested = asRecord(record[key]);
-    if (nested) {
-      return nested;
+
+  const nestedPayloads = asRecord(record.payloads);
+  if (nestedPayloads) {
+    const market = asRecord(nestedPayloads.market_snapshot ?? nestedPayloads["market_snapshot.json"]);
+    if (market) {
+      return market;
     }
+  }
+
+  const nested = asRecord(record.market_snapshot ?? record.snapshot ?? record.market);
+  if (nested) {
+    return nested;
   }
   return record;
 }
@@ -78,138 +85,129 @@ function inferSource(snapshot: SnapshotRecord, health: HealthResponse, usedDemoF
 }
 
 function inferLastUpdated(snapshot: SnapshotRecord, health: HealthResponse): string {
+  const epochValue = snapshot.updated_at_epoch_ms;
+  if (typeof epochValue === "number") {
+    return formatDateTime(new Date(epochValue).toISOString());
+  }
+
   const raw =
-    (typeof snapshot.last_updated === "string" && snapshot.last_updated) ||
     (typeof snapshot.updated_at === "string" && snapshot.updated_at) ||
     (typeof snapshot.generated_at === "string" && snapshot.generated_at) ||
-    (typeof health.last_updated === "string" && health.last_updated) ||
-    (typeof health.updated_at === "string" && health.updated_at);
+    (typeof health.updated_at === "string" && health.updated_at) ||
+    (typeof health.last_updated === "string" && health.last_updated);
 
   return formatDateTime(raw);
 }
 
 function collectMetrics(snapshot: SnapshotRecord): MetricItem[] {
-  const metrics = asRecord(snapshot.metrics);
+  const totalOpenings = snapshot.total_openings_estimate;
+  const trend = asRecord(snapshot.trend);
 
-  const known: Array<{ label: string; value: unknown; hint?: string }> = [
-    {
-      label: "Open Roles",
-      value:
-        snapshot.open_roles ?? snapshot.job_openings ?? snapshot.total_openings ?? metrics?.open_roles,
-      hint: "Current active demand"
-    },
-    {
-      label: "Hiring Companies",
-      value:
-        snapshot.hiring_companies ??
-        snapshot.total_companies ??
-        snapshot.company_count ??
-        metrics?.hiring_companies,
-      hint: "Distinct employers in window"
-    },
-    {
-      label: "Market Momentum",
-      value: snapshot.momentum ?? snapshot.market_momentum ?? metrics?.momentum,
-      hint: "Relative week-over-week trend"
-    },
-    {
-      label: "Signal Confidence",
-      value: snapshot.confidence ?? metrics?.confidence,
-      hint: "Data reliability at refresh"
-    }
-  ];
+  const trendPct =
+    typeof trend?.pct_change === "number"
+      ? `${formatNumber(trend.pct_change)}%`
+      : typeof trend?.pct_change === "string"
+        ? trend.pct_change
+        : "--";
 
-  const picked = known
-    .filter((item) => item.value !== undefined && item.value !== null && item.value !== "")
-    .map((item) => ({
-      label: item.label,
-      value: formatNumber(item.value),
-      hint: item.hint
-    }));
-
-  if (picked.length > 0) {
-    return picked;
-  }
-
-  if (metrics) {
-    const dynamic = Object.entries(metrics)
-      .slice(0, 4)
-      .map(([key, value]) => ({ label: toHeadline(key), value: formatNumber(value) }));
-    if (dynamic.length > 0) {
-      return dynamic;
-    }
-  }
+  const currentWindow = trend?.current_window;
+  const previousWindow = trend?.previous_window;
 
   return [
-    { label: "Open Roles", value: "--" },
-    { label: "Hiring Companies", value: "--" },
-    { label: "Market Momentum", value: "--" },
-    { label: "Signal Confidence", value: "--" }
+    {
+      label: "Hiring Now",
+      value: formatNumber(totalOpenings),
+      hint: "Estimated active openings"
+    },
+    {
+      label: "Trend",
+      value: trendPct,
+      hint: "Last window vs previous window"
+    },
+    {
+      label: "Current Window",
+      value: formatNumber(currentWindow),
+      hint: "Observed market signal volume"
+    },
+    {
+      label: "Previous Window",
+      value: formatNumber(previousWindow),
+      hint: "Baseline for trend comparison"
+    }
   ];
 }
 
-function toDisplayItems(raw: unknown, type: "company" | "signal"): DisplayItem[] {
+function toCompanyItems(raw: unknown): DisplayItem[] {
   if (!Array.isArray(raw)) {
     return [];
   }
 
   return raw
     .map((entry): DisplayItem | null => {
-      if (typeof entry === "string") {
-        return { title: entry, detail: "" };
-      }
       const record = asRecord(entry);
       if (!record) {
         return null;
       }
-
-      if (type === "company") {
-        const title =
-          (typeof record.name === "string" && record.name) ||
-          (typeof record.company_name === "string" && record.company_name) ||
-          (typeof record.title === "string" && record.title);
-
-        if (!title) {
-          return null;
-        }
-
-        const detail =
-          (typeof record.industry === "string" && record.industry) ||
-          (typeof record.location === "string" && record.location) ||
-          "Industry unavailable";
-
-        const openingsRaw = record.openings ?? record.job_openings ?? record.roles;
-
-        return {
-          title,
-          detail,
-          trailing: openingsRaw !== undefined ? `${formatNumber(openingsRaw)} openings` : undefined
-        };
-      }
-
       const title =
-        (typeof record.title === "string" && record.title) ||
-        (typeof record.signal === "string" && record.signal) ||
-        (typeof record.name === "string" && record.name);
-
+        (typeof record.company_name === "string" && record.company_name) ||
+        (typeof record.name === "string" && record.name) ||
+        "";
       if (!title) {
         return null;
       }
 
       const detail =
-        (typeof record.detail === "string" && record.detail) ||
-        (typeof record.summary === "string" && record.summary) ||
-        (typeof record.description === "string" && record.description) ||
-        "";
+        (typeof record.industry === "string" && record.industry) ||
+        (typeof record.location === "string" && record.location) ||
+        "Unknown";
+      const openings = record.openings_estimate ?? record.openings ?? record.job_openings;
 
-      return { title, detail };
+      return {
+        title,
+        detail,
+        trailing: openings !== undefined ? `${formatNumber(openings)} openings` : undefined
+      };
     })
     .filter((item): item is DisplayItem => item !== null)
-    .slice(0, 6);
+    .slice(0, 10);
+}
+
+function toSignalItems(snapshot: SnapshotRecord): DisplayItem[] {
+  const industries = Array.isArray(snapshot.top_industries) ? snapshot.top_industries : [];
+  const skills = Array.isArray(snapshot.top_skills) ? snapshot.top_skills : [];
+  const items: DisplayItem[] = [];
+
+  for (const industry of industries.slice(0, 4)) {
+    const record = asRecord(industry);
+    if (!record) {
+      continue;
+    }
+    const name = typeof record.industry === "string" ? record.industry : "Unknown";
+    items.push({
+      title: `Industry: ${name}`,
+      detail: "Hiring concentration",
+      trailing: formatNumber(record.count)
+    });
+  }
+
+  for (const skill of skills.slice(0, 6)) {
+    const record = asRecord(skill);
+    if (!record) {
+      continue;
+    }
+    const name = typeof record.skill === "string" ? record.skill : "Unknown";
+    items.push({
+      title: `Skill: ${name}`,
+      detail: "Frequency in market signals",
+      trailing: formatNumber(record.count)
+    });
+  }
+
+  return items;
 }
 
 export default function MarketTruthPage() {
-  const [region, setRegion] = useState("US");
+  const [region, setRegion] = useState("AE");
   const [roleCluster, setRoleCluster] = useState("data_analyst");
   const [days, setDays] = useState(7);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -260,13 +258,10 @@ export default function MarketTruthPage() {
 
   const metrics = useMemo(() => collectMetrics(snapshot), [snapshot]);
   const companies = useMemo(
-    () => toDisplayItems(snapshot.top_companies ?? snapshot.companies, "company"),
+    () => toCompanyItems(snapshot.listings_or_companies_sample ?? snapshot.top_companies ?? snapshot.companies),
     [snapshot]
   );
-  const signals = useMemo(
-    () => toDisplayItems(snapshot.signals ?? snapshot.trends ?? snapshot.insights, "signal"),
-    [snapshot]
-  );
+  const signals = useMemo(() => toSignalItems(snapshot), [snapshot]);
 
   const mode = inferMode(snapshot, health, usedDemoFallback);
   const source = inferSource(snapshot, health, usedDemoFallback);
@@ -315,8 +310,8 @@ export default function MarketTruthPage() {
             <input
               value={region}
               onChange={(event) => setRegion(event.target.value.toUpperCase())}
-              maxLength={3}
-              placeholder="US"
+              maxLength={8}
+              placeholder="AE"
             />
           </label>
 
@@ -382,7 +377,7 @@ export default function MarketTruthPage() {
               )}
             </SurfaceCard>
 
-            <SurfaceCard title="Signal Log" subtitle="Structured qualitative demand observations">
+            <SurfaceCard title="Signal Log" subtitle="Top industries and skill demand indicators">
               {signals.length === 0 ? (
                 <p className="muted-copy">No trend signals returned in this payload.</p>
               ) : (
@@ -393,6 +388,7 @@ export default function MarketTruthPage() {
                         <p className="line-title">{item.title}</p>
                         {item.detail && <p className="line-detail">{item.detail}</p>}
                       </div>
+                      {item.trailing && <p className="line-trailing">{item.trailing}</p>}
                     </li>
                   ))}
                 </ul>

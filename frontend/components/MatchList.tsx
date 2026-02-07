@@ -13,10 +13,11 @@ export function MatchList({ matches }: MatchListProps) {
   return (
     <div className="match-grid">
       {matches.map((match, index) => {
-        const name = match.name || match.candidate_name || `Candidate ${index + 1}`;
+        const name = match.student_name || match.name || match.candidate_name || `Candidate ${index + 1}`;
         const score = formatNumber(match.score);
         const rationale = typeof match.rationale === "string" ? match.rationale : "No rationale available.";
-        const skills = asStringArray(match.skills);
+        const evidence = asStringArray(match.evidence);
+        const gaps = asStringArray(match.gap_flags);
         const key = String(match.student_id || match.id || index);
 
         return (
@@ -26,15 +27,14 @@ export function MatchList({ matches }: MatchListProps) {
               <p className="match-score">{score}</p>
             </header>
             <p className="match-rationale">{rationale}</p>
-            {skills.length > 0 && (
-              <div className="chip-row">
-                {skills.slice(0, 5).map((skill) => (
-                  <span key={skill} className="chip">
-                    {skill}
-                  </span>
+            {evidence.length > 0 && (
+              <ul className="compact-list">
+                {evidence.slice(0, 3).map((line) => (
+                  <li key={line}>{line}</li>
                 ))}
-              </div>
+              </ul>
             )}
+            {gaps.length > 0 && <p className="line-detail">Gap flags: {gaps.join(", ")}</p>}
           </article>
         );
       })}

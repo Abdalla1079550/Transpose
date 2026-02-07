@@ -8,12 +8,15 @@ from pathlib import Path
 from docx import Document
 from fastapi.testclient import TestClient
 
-# Ensure app imports with DEMO_MODE fallback by default for local smoke.
 os.environ.setdefault("DEMO_MODE", "1")
+backend_root = Path(__file__).resolve().parents[1]
+smoke_db = backend_root / "smoke_test.db"
+if smoke_db.exists():
+    smoke_db.unlink()
+os.environ.setdefault("DATABASE_URL", f"sqlite:///{smoke_db}")
 
-BACKEND_ROOT = Path(__file__).resolve().parents[1]
-if str(BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(BACKEND_ROOT))
+if str(backend_root) not in sys.path:
+    sys.path.insert(0, str(backend_root))
 
 from app.main import app  # noqa: E402
 
@@ -40,31 +43,30 @@ def main() -> None:
         snapshot = _assert_ok(
             client.get(
                 "/market/snapshot",
-                params={"region": "US", "role_cluster": "data_analyst", "days": 7},
+                params={"region": "AE", "role_cluster": "data_analyst", "days": 7},
             )
         )
+
         questions = _assert_ok(client.get("/students/interview-questions"))
 
-        cv_bytes = _build_docx_bytes()
         create_student_resp = _assert_ok(
             client.post(
                 "/students",
                 data={
-                    "full_name": "Mustafa Ahmed",
+                    "name": "Mustafa Ahmed",
                     "email": "mustafa@example.com",
-                    "location": "US",
+                    "region_pref": "AE",
                     "grad_year": "2026",
                     "skills": "python,sql,tableau,communication",
                 },
                 files={
                     "cv": (
                         "mustafa_cv.docx",
-                        cv_bytes,
+                        _build_docx_bytes(),
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     )
                 },
-            ),
-            expected_status=200,
+            )
         )
         student_id = create_student_resp["id"]
 
@@ -72,14 +74,22 @@ def main() -> None:
             client.post(
                 f"/students/{student_id}/interview",
                 json={
+                    "role_cluster": "data_analyst",
+                    "location_preference": "AE",
                     "answers": [
-                        "I improved campaign ROI reporting by 18 percent using SQL automation.",
-                        "I validate metrics by reconciling source systems and anomaly checks.",
+                        {
+                            "question": "Describe your best project",
+                            "answer": "Built a churn dashboard in SQL and Tableau reducing manual reporting by 70%.",
+                        },
+                        {
+                            "question": "Hardest bug",
+                            "answer": "Fixed a timezone bug in ETL causing daily KPI drift.",
+                        },
                     ],
-                    "notes": "Strong communicator; comfortable with stakeholder demos.",
                 },
             )
         )
+
         card = _assert_ok(client.get(f"/students/{student_id}/card"))
 
         role = _assert_ok(
@@ -87,27 +97,30 @@ def main() -> None:
                 "/roles",
                 json={
                     "title": "Junior Data Analyst",
-                    "description": "Support BI reporting, SQL analysis, and dashboard delivery.",
-                    "location": "US",
-                    "must_have_skills": ["python", "sql", "tableau"],
+                    "region": "AE",
+                    "raw_desc": "Support BI reporting, SQL analysis, and dashboard delivery.",
+                    "skills_must": ["python", "sql", "tableau"],
                     "min_grad_year": 2025,
                 },
             )
         )
         role_id = role["id"]
+
         matches = _assert_ok(client.get(f"/roles/{role_id}/matches", params={"include_failed": "true"}))
+        smoke = _assert_ok(client.get("/crustdata/smoke-auth"))
 
     print("Smoke test passed")
     print(
         {
-            "health": health,
-            "market_source": snapshot.get("source"),
+            "health_mode": health.get("mode"),
+            "market_mode": snapshot.get("mode"),
             "questions_count": len(questions.get("questions", [])),
             "student_id": student_id,
-            "interview_saved": bool(interview.get("interview_notes")),
+            "saved_answers": interview.get("saved_answers_count"),
             "card_keys": sorted(card.get("card", {}).keys()),
             "role_id": role_id,
             "matches_total": matches.get("total"),
+            "smoke_mode": smoke.get("mode"),
         }
     )
 

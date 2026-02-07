@@ -9,26 +9,27 @@ from typing import Any, Literal
 import httpx
 
 AuthScheme = Literal["auto", "token", "bearer"]
+ConcreteScheme = Literal["token", "bearer"]
 
 
 class CrustDataError(RuntimeError):
-    """Base class for Crustdata integration errors."""
+    pass
 
 
 class CrustDataAuthError(CrustDataError):
-    """Authentication failures (401)."""
+    pass
 
 
 class CrustDataPermissionError(CrustDataError):
-    """Permission failures (403)."""
+    pass
 
 
 class CrustDataCreditsError(CrustDataError):
-    """Insufficient credits (402)."""
+    pass
 
 
 class CrustDataRequestError(CrustDataError):
-    """Generic upstream request failure."""
+    pass
 
 
 @dataclass
@@ -53,6 +54,7 @@ class CrustDataClient:
         self.ttl_seconds = max(60, min(120, ttl_seconds))
         self._client = httpx.Client(timeout=self.timeout_seconds)
         self._cache: dict[str, CacheEntry] = {}
+        self._selected_scheme_by_path: dict[str, ConcreteScheme] = {}
 
     def get_company_enrich(
         self,
@@ -66,11 +68,11 @@ class CrustDataClient:
             params["fields"] = ",".join(fields)
         if enrich_realtime is not None:
             params["enrich_realtime"] = str(enrich_realtime).lower()
-        return self._request("GET", "/screener/company", params=params)
+        return self._request("GET", "/screener/company", params=params, preferred_scheme="token")
 
     def post_company_search(self, filters: list[dict[str, Any]], page: int = 1) -> dict[str, Any]:
         body = {"filters": filters, "page": page}
-        return self._request("POST", "/screener/company/search", json_body=body)
+        return self._request("POST", "/screener/company/search", json_body=body, preferred_scheme="bearer")
 
     def post_web_search(
         self,
@@ -94,14 +96,51 @@ class CrustDataClient:
             body["startDate"] = start_date
         if end_date:
             body["endDate"] = end_date
-        return self._request("POST", "/screener/web-search", params=params, json_body=body)
+        return self._request("POST", "/screener/web-search", params=params, json_body=body, preferred_scheme="token")
 
     def post_web_fetch(self, urls: list[str]) -> dict[str, Any]:
         if not urls:
             raise ValueError("urls cannot be empty")
         if len(urls) > 10:
             raise ValueError("web-fetch supports at most 10 URLs")
-        return self._request("POST", "/screener/web-fetch", json_body={"urls": urls})
+        return self._request("POST", "/screener/web-fetch", json_body={"urls": urls}, preferred_scheme="token")
+
+    def smoke_auth_probe(self) -> dict[str, Any]:
+        """Try both auth schemes on endpoints we use and return scheme health without leaking token."""
+        self._require_token()
+        checks: list[tuple[str, str, str, dict[str, Any] | None, dict[str, Any] | None]] = [
+            ("GET", "/screener/company", "token", {"company_domain": "openai.com", "fields": "company_name"}, None),
+            (
+                "POST",
+                "/screener/company/search",
+                "bearer",
+                None,
+                {
+                    "filters": [
+                        {"type": "JOB_OPPORTUNITIES", "op": "in", "value": ["Hiring"]},
+                    ],
+                    "page": 1,
+                },
+            ),
+        ]
+        result: dict[str, Any] = {"checks": []}
+        selected = "unknown"
+        for method, path, preferred, params, body in checks:
+            endpoint_result = {"path": path, "preferred": preferred, "token": None, "bearer": None}
+            for scheme in ("token", "bearer"):
+                try:
+                    self._request(method, path, params=params, json_body=body, forced_scheme=scheme, skip_cache=True)
+                    endpoint_result[scheme] = "ok"
+                    if scheme == preferred:
+                        selected = "mixed" if selected not in ("unknown", scheme) else scheme
+                except CrustDataError as exc:
+                    endpoint_result[scheme] = exc.__class__.__name__
+            result["checks"].append(endpoint_result)
+
+        if selected == "unknown":
+            selected = self.auth_scheme
+        result["selected_scheme"] = selected
+        return result
 
     def _request(
         self,
@@ -109,16 +148,20 @@ class CrustDataClient:
         path: str,
         params: dict[str, Any] | None = None,
         json_body: dict[str, Any] | None = None,
+        preferred_scheme: ConcreteScheme | None = None,
+        forced_scheme: ConcreteScheme | None = None,
+        skip_cache: bool = False,
     ) -> dict[str, Any]:
         self._require_token()
 
         cache_key = self._cache_key(method=method, path=path, params=params, json_body=json_body)
         now = time.time()
-        cached = self._cache.get(cache_key)
-        if cached and cached.expires_at > now:
-            return cached.payload
+        if not skip_cache:
+            cached = self._cache.get(cache_key)
+            if cached and cached.expires_at > now:
+                return cached.payload
 
-        schemes = [self.auth_scheme] if self.auth_scheme != "auto" else ["token", "bearer"]
+        schemes = self._resolve_schemes(path, preferred_scheme=preferred_scheme, forced_scheme=forced_scheme)
         last_error: CrustDataError | None = None
 
         for scheme in schemes:
@@ -138,18 +181,38 @@ class CrustDataClient:
 
             if response.status_code < 400:
                 payload = self._safe_json(response)
-                self._cache[cache_key] = CacheEntry(expires_at=now + self.ttl_seconds, payload=payload)
+                self._selected_scheme_by_path[path] = scheme
+                if not skip_cache:
+                    self._cache[cache_key] = CacheEntry(expires_at=now + self.ttl_seconds, payload=payload)
                 return payload
 
             err = self._map_error(response)
-            if self.auth_scheme == "auto" and scheme == "token" and response.status_code in (401, 403):
-                last_error = err
+            last_error = err
+            if len(schemes) > 1 and response.status_code in (401, 403):
                 continue
             raise err
 
         if last_error:
             raise last_error
         raise CrustDataRequestError("Crustdata request failed.")
+
+    def _resolve_schemes(
+        self,
+        path: str,
+        preferred_scheme: ConcreteScheme | None,
+        forced_scheme: ConcreteScheme | None,
+    ) -> list[ConcreteScheme]:
+        if forced_scheme:
+            return [forced_scheme]
+        if self.auth_scheme in ("token", "bearer"):
+            return [self.auth_scheme]
+        remembered = self._selected_scheme_by_path.get(path)
+        if remembered:
+            return [remembered]
+
+        first = preferred_scheme or "token"
+        second: ConcreteScheme = "bearer" if first == "token" else "token"
+        return [first, second]
 
     @staticmethod
     def _safe_json(response: httpx.Response) -> dict[str, Any]:
@@ -163,20 +226,18 @@ class CrustDataClient:
         if not self.token:
             raise CrustDataAuthError("CRUSTDATA_TOKEN is not configured.")
 
-    def _headers_for_scheme(self, scheme: AuthScheme) -> dict[str, str]:
+    def _headers_for_scheme(self, scheme: ConcreteScheme) -> dict[str, str]:
         token = self.token or ""
         if scheme == "token":
             auth_value = f"Token {token}"
-        elif scheme == "bearer":
-            auth_value = f"Bearer {token}"
         else:
-            auth_value = f"Token {token}"
+            auth_value = f"Bearer {token}"
         return {"Authorization": auth_value, "Content-Type": "application/json"}
 
     @staticmethod
     def _map_error(response: httpx.Response) -> CrustDataError:
         status = response.status_code
-        body = response.text[:200]
+        body = response.text[:180]
         if status == 401:
             return CrustDataAuthError("Crustdata authentication failed (401).")
         if status == 403:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Any
 
@@ -22,6 +22,7 @@ from .crustdata_client import (
 from .cv_parser import CVParseError, parse_cv
 from .db import get_session, init_db
 from .demo_data import load_all_demo_payloads, load_demo_json
+from .market import build_market_snapshot
 from .matching import compute_match
 from .models import Match, RoleQuery, Student
 from .openai_client import OpenAIHelper
@@ -30,6 +31,7 @@ from .schemas import (
     CrustDataSmokeResponse,
     DemoCachedResponse,
     HealthResponse,
+    InterviewQuestion,
     InterviewQuestionsResponse,
     MarketSnapshotResponse,
     MatchItem,
@@ -40,6 +42,7 @@ from .schemas import (
     StudentInterviewRequest,
     StudentInterviewResponse,
 )
+from .text_utils import extract_skills_from_text
 
 settings = get_settings()
 openai_helper = OpenAIHelper(
@@ -95,75 +98,120 @@ async def crustdata_generic_error_handler(_, exc: CrustDataError) -> JSONRespons
     return JSONResponse(status_code=502, content={"detail": str(exc)})
 
 
+def _now_iso() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _now_ms() -> int:
+    return int(datetime.now(UTC).timestamp() * 1000)
+
+
+def _parse_answers(payload: StudentInterviewRequest) -> list[dict[str, str]]:
+    normalized: list[dict[str, str]] = []
+
+    if payload.role_cluster:
+        normalized.append({"question": "Target role cluster(s)", "answer": payload.role_cluster})
+    if payload.location_preference:
+        normalized.append({"question": "Location preference", "answer": payload.location_preference})
+
+    for item in payload.answers:
+        if isinstance(item, str):
+            text = item.strip()
+            if text:
+                normalized.append({"question": "response", "answer": text})
+        else:
+            question = item.question.strip()
+            answer = item.answer.strip()
+            if question or answer:
+                normalized.append({"question": question or "response", "answer": answer})
+
+    if payload.notes and payload.notes.strip():
+        normalized.append({"question": "additional_notes", "answer": payload.notes.strip()})
+
+    return normalized
+
+
+def _role_from_interview(student: Student) -> str:
+    try:
+        answers = json.loads(student.interview_answers_json)
+    except json.JSONDecodeError:
+        return "data_analyst"
+    if not isinstance(answers, list):
+        return "data_analyst"
+    for item in answers:
+        if isinstance(item, dict) and str(item.get("question", "")).lower().startswith("target role"):
+            value = item.get("answer")
+            if isinstance(value, str) and value.strip():
+                return value.strip().lower().replace(" ", "_")
+    return "data_analyst"
+
+
+def _snapshot_from_demo(region: str, role_cluster: str, days: int, mode: str) -> MarketSnapshotResponse:
+    cached = load_demo_json("market_snapshot.json")
+    cached["region"] = region
+    cached["role_cluster"] = role_cluster
+    cached["window_days"] = days
+    cached["mode"] = mode
+    cached["updated_at_epoch_ms"] = _now_ms()
+    cached["updated_at"] = _now_iso()
+    return MarketSnapshotResponse(**cached)
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    return HealthResponse(ok=True, service="edgematch-backend")
+    live = not settings.demo_mode
+    return HealthResponse(
+        ok=True,
+        service="edgematch-backend",
+        mode="live" if live else "demo",
+        data_source="Crustdata" if live else "Cached demo payloads",
+        updated_at=_now_iso(),
+    )
 
 
 @app.get("/market/snapshot", response_model=MarketSnapshotResponse)
 def market_snapshot(
-    region: str = Query(default="US"),
+    region: str = Query(default="AE"),
     role_cluster: str = Query(default="data_analyst"),
     days: int = Query(default=7, ge=1, le=30),
 ) -> MarketSnapshotResponse:
     if settings.demo_mode:
-        cached = load_demo_json("market_snapshot.json")
-        return MarketSnapshotResponse(
-            region=region,
-            role_cluster=role_cluster,
-            days=days,
-            source="demo",
-            companies=cached.get("companies", []),
-            news=cached.get("news", []),
-        )
+        return _snapshot_from_demo(region=region, role_cluster=role_cluster, days=days, mode="demo")
 
     client = get_crustdata_client()
-
     try:
-        filters = [
-            {"type": "REGION", "op": "in", "value": [region]},
-            {"type": "JOB_OPPORTUNITIES", "op": "in", "value": ["Hiring"]},
-            {"type": "KEYWORD", "op": "in", "value": [role_cluster.replace("_", " ")]},
-        ]
-        company_search = client.post_company_search(filters=filters, page=1)
-        web_search = client.post_web_search(
-            query=f"{role_cluster.replace('_', ' ')} hiring in {region}",
-            geolocation=region,
-            sources=["news", "web"],
-            fetch_content=False,
-        )
-
-        return MarketSnapshotResponse(
-            region=region,
-            role_cluster=role_cluster,
-            days=days,
-            source="live",
-            companies=company_search.get("companies", [])[:10],
-            news=web_search.get("results", [])[:8],
-        )
+        payload = build_market_snapshot(client=client, region=region, role_cluster=role_cluster, days=days)
+        payload["data_source"] = "Crustdata"
+        payload["mode"] = "live"
+        payload["updated_at_epoch_ms"] = _now_ms()
+        payload["updated_at"] = _now_iso()
+        return MarketSnapshotResponse(**payload)
     except CrustDataError:
-        cached = load_demo_json("market_snapshot.json")
-        return MarketSnapshotResponse(
-            region=region,
-            role_cluster=role_cluster,
-            days=days,
-            source="fallback-demo",
-            companies=cached.get("companies", []),
-            news=cached.get("news", []),
-        )
+        return _snapshot_from_demo(region=region, role_cluster=role_cluster, days=days, mode="fallback-demo")
 
 
 @app.get("/students/interview-questions", response_model=InterviewQuestionsResponse)
 def interview_questions() -> InterviewQuestionsResponse:
     cached = load_demo_json("interview_questions.json")
-    questions = cached.get("questions", [])
-    return InterviewQuestionsResponse(questions=questions)
+    payload = cached.get("questions", [])
+    normalized: list[InterviewQuestion] = []
+    for index, item in enumerate(payload):
+        if isinstance(item, str):
+            normalized.append(InterviewQuestion(id=f"q_{index + 1}", prompt=item))
+        elif isinstance(item, dict):
+            qid = str(item.get("id") or f"q_{index + 1}")
+            prompt = str(item.get("prompt") or item.get("question") or "")
+            if prompt:
+                normalized.append(InterviewQuestion(id=qid, prompt=prompt))
+    return InterviewQuestionsResponse(questions=normalized)
 
 
 @app.post("/students", response_model=StudentCreatedResponse)
 def create_student(
-    full_name: str = Form(...),
+    name: str | None = Form(default=None),
+    full_name: str | None = Form(default=None),
     email: str | None = Form(default=None),
+    region_pref: str | None = Form(default=None),
     location: str | None = Form(default=None),
     grad_year: int | None = Form(default=None),
     skills: str | None = Form(default=None),
@@ -179,21 +227,25 @@ def create_student(
     except CVParseError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    candidate_name = (name or full_name or "Unnamed Candidate").strip()
+    explicit_skills = [item.strip() for item in (skills or "").split(",") if item.strip()]
+    inferred = extract_skills_from_text(cv_text, max_items=15)
+    merged_skills = list(dict.fromkeys([*explicit_skills, *inferred]))[:15]
+
     student = Student(
-        full_name=full_name,
+        name=candidate_name,
         email=email,
-        location=location,
+        region_pref=(region_pref or location),
         grad_year=grad_year,
-        skills_csv=skills or "",
-        cv_filename=cv.filename,
         cv_text=cv_text,
-        updated_at=datetime.now(timezone.utc),
+        skills_json=json.dumps(merged_skills, ensure_ascii=True),
+        updated_at=datetime.now(UTC),
     )
     session.add(student)
     session.commit()
     session.refresh(student)
 
-    return StudentCreatedResponse(id=student.id or 0, full_name=student.full_name, created_at=student.created_at)
+    return StudentCreatedResponse(id=student.id or 0, name=student.name, created_at=student.created_at)
 
 
 @app.post("/students/{student_id}/interview", response_model=StudentInterviewResponse)
@@ -206,17 +258,13 @@ def save_interview(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found.")
 
-    chunks = [answer.strip() for answer in payload.answers if answer.strip()]
-    if payload.notes and payload.notes.strip():
-        chunks.append(payload.notes.strip())
-    notes = "\n".join(chunks)
-
-    student.interview_notes = notes
-    student.updated_at = datetime.now(timezone.utc)
+    normalized = _parse_answers(payload)
+    student.interview_answers_json = json.dumps(normalized, ensure_ascii=True)
+    student.updated_at = datetime.now(UTC)
     session.add(student)
     session.commit()
 
-    return StudentInterviewResponse(id=student_id, interview_notes=student.interview_notes)
+    return StudentInterviewResponse(id=student_id, saved_answers_count=len(normalized))
 
 
 @app.get("/students/{student_id}/card", response_model=CandidateCardResponse)
@@ -237,9 +285,22 @@ def student_card(
         except json.JSONDecodeError:
             pass
 
-    card = generate_candidate_card(student, openai_helper)
+    role_cluster = _role_from_interview(student)
+    region = student.region_pref or "AE"
+    market_ctx: dict[str, Any] | None = None
+
+    if settings.demo_mode:
+        market_ctx = load_demo_json("market_snapshot.json")
+    else:
+        client = get_crustdata_client()
+        try:
+            market_ctx = build_market_snapshot(client=client, region=region, role_cluster=role_cluster, days=7)
+        except CrustDataError:
+            market_ctx = load_demo_json("market_snapshot.json")
+
+    card = generate_candidate_card(student=student, openai_helper=openai_helper, market_snapshot=market_ctx)
     student.card_json = serialize_card(card)
-    student.updated_at = datetime.now(timezone.utc)
+    student.updated_at = datetime.now(UTC)
     session.add(student)
     session.commit()
 
@@ -248,24 +309,30 @@ def student_card(
 
 @app.post("/roles", response_model=RoleCreateResponse)
 def create_role(payload: RoleCreateRequest, session: Session = Depends(get_session)) -> RoleCreateResponse:
+    title = (payload.title or payload.role_title or "Untitled Role").strip()
+    skills = payload.skills_must if payload.skills_must else payload.must_have_skills
+
     role = RoleQuery(
-        title=payload.title,
-        description=payload.description,
-        location=payload.location,
-        must_have_skills_csv=",".join(payload.must_have_skills),
+        title=title,
+        region=(payload.region or payload.location),
+        raw_desc=(payload.raw_desc or payload.description),
+        skills_must_json=json.dumps([skill.strip().lower() for skill in skills if skill.strip()], ensure_ascii=True),
         min_grad_year=payload.min_grad_year,
+        max_grad_year=payload.max_grad_year,
+        source_job_id=payload.job_id,
+        source_job_url=payload.job_url,
     )
     session.add(role)
     session.commit()
     session.refresh(role)
 
-    return RoleCreateResponse(id=role.id or 0, title=role.title)
+    return RoleCreateResponse(id=role.id or 0, title=role.title, region=role.region)
 
 
 @app.get("/roles/{role_id}/matches", response_model=RoleMatchesResponse)
 def role_matches(
     role_id: int,
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=10, ge=1, le=100),
     include_failed: bool = Query(default=False),
     session: Session = Depends(get_session),
 ) -> RoleMatchesResponse:
@@ -279,24 +346,28 @@ def role_matches(
     for student in students:
         computed = compute_match(role, student, openai_helper)
         existing = session.exec(
-            select(Match).where(Match.role_id == role_id).where(Match.student_id == (student.id or -1))
+            select(Match).where(Match.role_query_id == role_id).where(Match.student_id == (student.id or -1))
         ).first()
         if not existing:
-            existing = Match(role_id=role_id, student_id=student.id or 0)
+            existing = Match(role_query_id=role_id, student_id=student.id or 0)
 
         existing.score = computed.score
         existing.hard_filter_passed = computed.hard_filter_passed
         existing.rationale = computed.rationale
+        existing.evidence_json = json.dumps(computed.evidence, ensure_ascii=True)
+        existing.gap_flags_json = json.dumps(computed.gap_flags, ensure_ascii=True)
         session.add(existing)
 
         if include_failed or computed.hard_filter_passed:
             response_items.append(
                 MatchItem(
                     student_id=student.id or 0,
-                    student_name=student.full_name,
+                    student_name=student.name,
                     score=computed.score,
-                    hard_filter_passed=computed.hard_filter_passed,
                     rationale=computed.rationale,
+                    evidence=computed.evidence,
+                    gap_flags=computed.gap_flags,
+                    hard_filter_passed=computed.hard_filter_passed,
                 )
             )
 
@@ -314,20 +385,15 @@ def demo_cached() -> DemoCachedResponse:
 @app.get("/crustdata/smoke-auth", response_model=CrustDataSmokeResponse)
 def crustdata_smoke_auth() -> CrustDataSmokeResponse:
     if settings.demo_mode:
+        details = load_demo_json("crustdata_smoke_auth.json")
         return CrustDataSmokeResponse(
             ok=True,
             mode="demo",
-            details=load_demo_json("crustdata_smoke_auth.json"),
+            selected_scheme=str(details.get("selected_scheme") or "mixed"),
+            details=details,
         )
 
     client = get_crustdata_client()
-    payload: dict[str, Any] = client.get_company_enrich(
-        company_domain="openai.com",
-        fields=["company_name", "industry", "company_website_domain"],
-    )
-
-    details = {
-        "status": "authenticated",
-        "keys": sorted(list(payload.keys()))[:8],
-    }
-    return CrustDataSmokeResponse(ok=True, mode="live", details=details)
+    details = client.smoke_auth_probe()
+    selected_scheme = str(details.get("selected_scheme") or settings.crustdata_auth_scheme)
+    return CrustDataSmokeResponse(ok=True, mode="live", selected_scheme=selected_scheme, details=details)
