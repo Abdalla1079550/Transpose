@@ -83,6 +83,7 @@ Because docs show mixed schemes, backend client supports `token|bearer|auto`, pr
 - `POST /roles`
 - `GET /roles/{id}/matches`
 - `POST /roles/{id}/outreach`
+- `POST /demo/bootstrap?reset=true`
 - `GET /demo/cached`
 - `GET /crustdata/smoke-auth`
 
@@ -105,3 +106,11 @@ Because docs show mixed schemes, backend client supports `token|bearer|auto`, pr
 ## Deployment/Demo Modes
 - `DEMO_MODE=0`: live Crustdata first, fallback per-route when upstream unavailable
 - `DEMO_MODE=1`: always use cached sample payloads
+
+## Demo Dataset Strategy
+- Rich seeded scenario stored in:
+  - `backend/data/demo_scenario.json` (students, interview context, roles)
+  - `backend/data/market_snapshots.json` (role-cluster market snapshots)
+- Bootstrap endpoint:
+  - `POST /demo/bootstrap` clears and reseeds SQLite with realistic demo records.
+  - Generates candidate cards, match records, and outreach previews at seed time.

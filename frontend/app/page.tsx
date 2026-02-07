@@ -5,7 +5,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { MetricTile } from "@/components/MetricTile";
 import { ModeIndicator } from "@/components/ModeIndicator";
 import { SurfaceCard } from "@/components/SurfaceCard";
-import { BACKEND_URL, getDemoCached, getHealth, getMarketSnapshot } from "@/lib/api";
+import { BACKEND_URL, bootstrapDemo, getDemoCached, getHealth, getMarketSnapshot } from "@/lib/api";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import type { HealthResponse, MetricItem, Mode } from "@/lib/types";
 
@@ -229,6 +229,8 @@ export default function MarketTruthPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usedDemoFallback, setUsedDemoFallback] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState(false);
+  const [bootstrapMessage, setBootstrapMessage] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -312,6 +314,34 @@ export default function MarketTruthPage() {
     downloadText(`curriculum_gap_brief_${region}_${roleCluster}.csv`, rows.join("\n"), "text/csv");
   };
 
+  const prepareJudgeDemo = async () => {
+    setBootstrapMessage(null);
+    setBootstrapping(true);
+    const result = await bootstrapDemo(true);
+    setBootstrapping(false);
+
+    if (!result.ok) {
+      setBootstrapMessage(`Demo bootstrap failed: ${result.error}`);
+      return;
+    }
+
+    const payload = result.data;
+    const showcase = asRecord(payload.showcase);
+    const nextRegion =
+      (showcase && typeof showcase.region === "string" && showcase.region) || "AE";
+    const nextRole =
+      (showcase && typeof showcase.role_cluster === "string" && showcase.role_cluster) || "data_analyst";
+
+    setRegion(nextRegion);
+    setRoleCluster(nextRole);
+    setDays(7);
+    setRefreshToken((value) => value + 1);
+
+    const students = Array.isArray(payload.students) ? payload.students.length : 0;
+    const roles = Array.isArray(payload.roles) ? payload.roles.length : 0;
+    setBootstrapMessage(`Demo dataset loaded: ${students} students, ${roles} roles.`);
+  };
+
   return (
     <div className="page-stack">
       <section className="page-header">
@@ -327,6 +357,9 @@ export default function MarketTruthPage() {
         subtitle="Tune region, role cluster, and time window"
         actions={
           <div className="surface-actions">
+            <button className="secondary-button" onClick={prepareJudgeDemo} type="button" disabled={bootstrapping}>
+              {bootstrapping ? "Preparing..." : "Prepare Judge Demo"}
+            </button>
             <button className="ghost-button" onClick={exportBriefJson} type="button">
               Export JSON
             </button>
@@ -392,6 +425,7 @@ export default function MarketTruthPage() {
         </form>
 
         {error && <ErrorState compact title="Data warning" message={error} onRetry={loadData} />}
+        {bootstrapMessage && <p className="success-line">{bootstrapMessage}</p>}
       </SurfaceCard>
 
       {loading && <p className="muted-copy">Refreshing market signals…</p>}

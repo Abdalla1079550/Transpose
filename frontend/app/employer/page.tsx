@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ErrorState } from "@/components/ErrorState";
 import { MatchList } from "@/components/MatchList";
 import { SurfaceCard } from "@/components/SurfaceCard";
-import { BACKEND_URL, createOutreachDraft, createRole, getRoleMatches } from "@/lib/api";
+import { BACKEND_URL, bootstrapDemo, createOutreachDraft, createRole, getRoleMatches } from "@/lib/api";
 import type { MatchData, OutreachDraft } from "@/lib/types";
 
 type GenericRecord = Record<string, unknown>;
@@ -62,6 +62,8 @@ export default function EmployerPage() {
   const [roleError, setRoleError] = useState<string | null>(null);
   const [matchesError, setMatchesError] = useState<string | null>(null);
   const [outreachError, setOutreachError] = useState<string | null>(null);
+  const [seedingDemo, setSeedingDemo] = useState(false);
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
 
   const fetchMatches = async (id: string) => {
     setMatchesError(null);
@@ -131,6 +133,42 @@ export default function EmployerPage() {
     setOutreachDraft(result.data as OutreachDraft);
   };
 
+  const loadSeededShortlist = async () => {
+    setDemoMessage(null);
+    setRoleError(null);
+    setMatchesError(null);
+    setOutreachError(null);
+    setSeedingDemo(true);
+    const seeded = await bootstrapDemo(true);
+    setSeedingDemo(false);
+
+    if (!seeded.ok) {
+      setDemoMessage(`Demo bootstrap failed: ${seeded.error}`);
+      return;
+    }
+
+    const showcaseRaw = seeded.data.showcase;
+    const previewsRaw = seeded.data.outreach_previews;
+    if (!showcaseRaw || typeof showcaseRaw !== "object") {
+      setDemoMessage("Demo bootstrap succeeded but showcase role is missing.");
+      return;
+    }
+    const showcase = showcaseRaw as { role_id?: number };
+    if (!showcase.role_id) {
+      setDemoMessage("Demo bootstrap missing role_id.");
+      return;
+    }
+
+    const seededRoleId = String(showcase.role_id);
+    setRoleId(seededRoleId);
+    await fetchMatches(seededRoleId);
+
+    if (Array.isArray(previewsRaw) && previewsRaw.length > 0 && typeof previewsRaw[0] === "object" && previewsRaw[0]) {
+      setOutreachDraft(previewsRaw[0] as OutreachDraft);
+    }
+    setDemoMessage("Seeded shortlist loaded. Generate outreach from any top candidate.");
+  };
+
   return (
     <div className="page-stack">
       <section className="page-header">
@@ -140,7 +178,15 @@ export default function EmployerPage() {
         </div>
       </section>
 
-      <SurfaceCard title="Role Input" subtitle={`Backend: ${BACKEND_URL}`}>
+      <SurfaceCard
+        title="Role Input"
+        subtitle={`Backend: ${BACKEND_URL}`}
+        actions={
+          <button className="secondary-button" type="button" onClick={loadSeededShortlist} disabled={seedingDemo}>
+            {seedingDemo ? "Preparing..." : "Load Seeded Shortlist"}
+          </button>
+        }
+      >
         <form className="form-grid" onSubmit={createRoleAndFetch}>
           <label className="field">
             Role title
@@ -178,6 +224,7 @@ export default function EmployerPage() {
         </form>
 
         {roleId && <p className="success-line">Role ID: {roleId}</p>}
+        {demoMessage && <p className="success-line">{demoMessage}</p>}
         {roleError && <ErrorState compact message={roleError} onRetry={() => setRoleError(null)} />}
       </SurfaceCard>
 

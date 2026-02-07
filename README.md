@@ -58,6 +58,7 @@ make dev
 - `POST /roles`
 - `GET /roles/{id}/matches`
 - `POST /roles/{id}/outreach`
+- `POST /demo/bootstrap?reset=true`
 - `GET /demo/cached`
 - `GET /crustdata/smoke-auth`
 
@@ -67,6 +68,14 @@ Runs full core flow in `DEMO_MODE=1`:
 cd backend
 . .venv/bin/activate
 python scripts/smoke_test.py
+```
+
+## One-Command Demo Bootstrap
+Seeds high-fidelity candidates, roles, matches, and outreach previews:
+```bash
+cd backend
+. .venv/bin/activate
+python scripts/bootstrap_demo.py
 ```
 
 ## Demo Mode and Live Mode
@@ -79,10 +88,10 @@ UI shows:
 - `Last updated`
 
 ## 3-Minute Demo Script
-1. Open `/` and set `region=AE`, `role_cluster=data_analyst`; show hiring estimate, trend, top industries, top skills.
+1. On `/`, click `Prepare Judge Demo` to seed the full scenario, then show live/demo indicator, hiring estimate, trend, top industries, and top skills.
 2. Export curriculum gap brief as JSON/CSV from dashboard controls.
-3. Open `/student`; upload CV, load questions, submit answers, show generated candidate card tied to market context.
-4. Open `/employer`; create role, fetch shortlist, show rationale/evidence/gap flags, click `Generate Outreach`.
+3. On `/student`, click `Load Seeded Candidate`, then show candidate card with strengths, gaps, improvements, and market citation.
+4. On `/employer`, click `Load Seeded Shortlist`, show ranked matches with evidence/gap flags, then click `Generate Outreach`.
 
 ## Notes
 - Crustdata auth styles differ by endpoint (`Token` vs `Bearer`), so client supports `auto` probing and per-endpoint fallback.

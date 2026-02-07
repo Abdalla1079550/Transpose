@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { SurfaceCard } from "@/components/SurfaceCard";
 import {
   BACKEND_URL,
+  bootstrapDemo,
   createStudent,
   getInterviewQuestions,
   getStudentCard,
@@ -99,6 +100,8 @@ export default function StudentPage() {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [submittingInterview, setSubmittingInterview] = useState(false);
   const [loadingCard, setLoadingCard] = useState(false);
+  const [seedingDemo, setSeedingDemo] = useState(false);
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
 
   const uploadStudent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -189,6 +192,55 @@ export default function StudentPage() {
     setCandidateCard(card);
   }, [studentId]);
 
+  const loadSeededCandidate = async () => {
+    setDemoMessage(null);
+    setUploadError(null);
+    setInterviewError(null);
+    setCardError(null);
+
+    setSeedingDemo(true);
+    const seeded = await bootstrapDemo(true);
+    setSeedingDemo(false);
+    if (!seeded.ok) {
+      setDemoMessage(`Demo bootstrap failed: ${seeded.error}`);
+      return;
+    }
+
+    const showcaseRaw = seeded.data.showcase;
+    if (!showcaseRaw || typeof showcaseRaw !== "object") {
+      setDemoMessage("Demo bootstrap succeeded but showcase data is missing.");
+      return;
+    }
+
+    const showcase = showcaseRaw as { student_id?: number; role_cluster?: string; region?: string };
+    const seededStudentId = showcase.student_id;
+    if (!seededStudentId) {
+      setDemoMessage("Seeded data missing student_id.");
+      return;
+    }
+
+    setStudentId(String(seededStudentId));
+    if (typeof showcase.role_cluster === "string" && showcase.role_cluster) {
+      setTargetRole(showcase.role_cluster);
+    }
+    if (typeof showcase.region === "string" && showcase.region) {
+      setLocation(showcase.region);
+    }
+
+    const result = await getStudentCard(String(seededStudentId));
+    if (!result.ok) {
+      setCardError(result.error);
+      return;
+    }
+    const card = extractCard(result.data);
+    if (!card) {
+      setCardError("Unable to load seeded candidate card.");
+      return;
+    }
+    setCandidateCard(card);
+    setDemoMessage("Seeded candidate loaded. Card is demo-ready.");
+  };
+
   const sendInterview = async () => {
     if (!studentId) {
       setInterviewError("Student id is missing. Upload profile first.");
@@ -242,7 +294,15 @@ export default function StudentPage() {
         </div>
       </section>
 
-      <SurfaceCard title="1. Candidate Intake" subtitle={`Backend: ${BACKEND_URL}`}>
+      <SurfaceCard
+        title="1. Candidate Intake"
+        subtitle={`Backend: ${BACKEND_URL}`}
+        actions={
+          <button className="secondary-button" type="button" onClick={loadSeededCandidate} disabled={seedingDemo}>
+            {seedingDemo ? "Preparing..." : "Load Seeded Candidate"}
+          </button>
+        }
+      >
         <form className="form-grid" onSubmit={uploadStudent}>
           <label className="field">
             Full name
@@ -305,6 +365,7 @@ export default function StudentPage() {
         </form>
 
         {studentId && <p className="success-line">Student ID: {studentId}</p>}
+        {demoMessage && <p className="success-line">{demoMessage}</p>}
         {uploadError && <ErrorState compact message={uploadError} onRetry={() => setUploadError(null)} />}
       </SurfaceCard>
 

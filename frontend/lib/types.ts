@@ -97,3 +97,18 @@ export interface OutreachDraft {
   subject?: string;
   body?: string;
 }
+
+export interface DemoBootstrapData {
+  ok?: boolean;
+  dataset_version?: string;
+  seeded_at?: string;
+  students?: Array<{ id?: number; name?: string }>;
+  roles?: Array<{ id?: number; title?: string; region?: string }>;
+  showcase?: {
+    student_id?: number;
+    role_id?: number;
+    region?: string;
+    role_cluster?: string;
+  };
+  outreach_previews?: OutreachDraft[];
+}

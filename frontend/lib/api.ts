@@ -183,3 +183,9 @@ export function createOutreachDraft(roleId: string, studentId: string) {
     body: JSON.stringify({ student_id: Number(studentId), tone: "professional" })
   });
 }
+
+export function bootstrapDemo(reset = true) {
+  return request<Record<string, unknown>>("/demo/bootstrap", {
+    method: "POST"
+  }, { reset });
+}
