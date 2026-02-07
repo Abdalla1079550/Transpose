@@ -1,0 +1,158 @@
+{
+  "data_analyst": {
+    "role_cluster": "data_analyst",
+    "region": "AE",
+    "window_days": 7,
+    "total_openings_estimate": 184,
+    "listings_or_companies_sample": [
+      {"company_name": "Noon", "industry": "E-commerce", "openings_estimate": 26, "location": "Dubai", "website": "noon.com"},
+      {"company_name": "Careem", "industry": "Mobility", "openings_estimate": 18, "location": "Dubai", "website": "careem.com"},
+      {"company_name": "Talabat", "industry": "FoodTech", "openings_estimate": 15, "location": "Dubai", "website": "talabat.com"},
+      {"company_name": "ADNOC", "industry": "Energy", "openings_estimate": 14, "location": "Abu Dhabi", "website": "adnoc.ae"},
+      {"company_name": "Mashreq", "industry": "Banking", "openings_estimate": 13, "location": "Dubai", "website": "mashreq.com"},
+      {"company_name": "Emirates NBD", "industry": "Banking", "openings_estimate": 12, "location": "Dubai", "website": "emiratesnbd.com"},
+      {"company_name": "DP World", "industry": "Logistics", "openings_estimate": 11, "location": "Dubai", "website": "dpworld.com"},
+      {"company_name": "Etisalat", "industry": "Telecom", "openings_estimate": 10, "location": "Abu Dhabi", "website": "eand.com"},
+      {"company_name": "Aster", "industry": "Healthcare", "openings_estimate": 9, "location": "Dubai", "website": "asterdmhealthcare.com"},
+      {"company_name": "Majid Al Futtaim", "industry": "Retail", "openings_estimate": 8, "location": "Dubai", "website": "majidalfuttaim.com"}
+    ],
+    "trend": {"current_window": 184, "previous_window": 147, "pct_change": 25.17},
+    "top_industries": [
+      {"industry": "E-commerce", "count": 19},
+      {"industry": "Banking", "count": 15},
+      {"industry": "Logistics", "count": 12},
+      {"industry": "Energy", "count": 10},
+      {"industry": "Telecom", "count": 9}
+    ],
+    "top_skills": [
+      {"skill": "SQL", "count": 64},
+      {"skill": "Python", "count": 58},
+      {"skill": "Power BI", "count": 49},
+      {"skill": "Excel", "count": 44},
+      {"skill": "Tableau", "count": 41},
+      {"skill": "Statistics", "count": 31},
+      {"skill": "A/B Testing", "count": 26},
+      {"skill": "Data Storytelling", "count": 24}
+    ],
+    "data_source": "Crustdata (curated demo sample)",
+    "mode": "demo",
+    "updated_at_epoch_ms": 1738947600000,
+    "updated_at": "2026-02-07T09:00:00Z"
+  },
+  "software_engineer": {
+    "role_cluster": "software_engineer",
+    "region": "AE",
+    "window_days": 7,
+    "total_openings_estimate": 233,
+    "listings_or_companies_sample": [
+      {"company_name": "Careem", "industry": "Mobility", "openings_estimate": 31, "location": "Dubai", "website": "careem.com"},
+      {"company_name": "Noon", "industry": "E-commerce", "openings_estimate": 28, "location": "Dubai", "website": "noon.com"},
+      {"company_name": "Bayzat", "industry": "InsurTech", "openings_estimate": 18, "location": "Dubai", "website": "bayzat.com"},
+      {"company_name": "Property Finder", "industry": "PropTech", "openings_estimate": 17, "location": "Dubai", "website": "propertyfinder.ae"},
+      {"company_name": "Kitopi", "industry": "Cloud Kitchens", "openings_estimate": 16, "location": "Dubai", "website": "kitopi.com"},
+      {"company_name": "Thndr", "industry": "FinTech", "openings_estimate": 14, "location": "Dubai", "website": "thndr.com"},
+      {"company_name": "Yalla Group", "industry": "Consumer Apps", "openings_estimate": 13, "location": "Dubai", "website": "yallagroup.com"},
+      {"company_name": "ENBD X", "industry": "Digital Banking", "openings_estimate": 12, "location": "Dubai", "website": "emiratesnbd.com"},
+      {"company_name": "Astra Tech", "industry": "Super App", "openings_estimate": 11, "location": "Abu Dhabi", "website": "astratech.ae"},
+      {"company_name": "Dubizzle", "industry": "Marketplace", "openings_estimate": 10, "location": "Dubai", "website": "dubizzle.com"}
+    ],
+    "trend": {"current_window": 233, "previous_window": 198, "pct_change": 17.68},
+    "top_industries": [
+      {"industry": "E-commerce", "count": 22},
+      {"industry": "FinTech", "count": 18},
+      {"industry": "Mobility", "count": 15},
+      {"industry": "Marketplace", "count": 13},
+      {"industry": "Digital Banking", "count": 11}
+    ],
+    "top_skills": [
+      {"skill": "Python", "count": 79},
+      {"skill": "TypeScript", "count": 72},
+      {"skill": "React", "count": 66},
+      {"skill": "Node.js", "count": 61},
+      {"skill": "Docker", "count": 53},
+      {"skill": "PostgreSQL", "count": 48},
+      {"skill": "Kubernetes", "count": 33},
+      {"skill": "AWS", "count": 31}
+    ],
+    "data_source": "Crustdata (curated demo sample)",
+    "mode": "demo",
+    "updated_at_epoch_ms": 1738947600000,
+    "updated_at": "2026-02-07T09:00:00Z"
+  },
+  "cybersecurity": {
+    "role_cluster": "cybersecurity",
+    "region": "AE",
+    "window_days": 7,
+    "total_openings_estimate": 97,
+    "listings_or_companies_sample": [
+      {"company_name": "DarkMatter", "industry": "Cybersecurity", "openings_estimate": 14, "location": "Abu Dhabi", "website": "darkmatter.ae"},
+      {"company_name": "Help AG", "industry": "Cybersecurity", "openings_estimate": 12, "location": "Dubai", "website": "helpag.com"},
+      {"company_name": "Etisalat", "industry": "Telecom", "openings_estimate": 10, "location": "Abu Dhabi", "website": "eand.com"},
+      {"company_name": "ADNOC", "industry": "Energy", "openings_estimate": 9, "location": "Abu Dhabi", "website": "adnoc.ae"},
+      {"company_name": "DIFC", "industry": "Financial Services", "openings_estimate": 8, "location": "Dubai", "website": "difc.ae"},
+      {"company_name": "Mubadala", "industry": "Sovereign Investment", "openings_estimate": 7, "location": "Abu Dhabi", "website": "mubadala.com"},
+      {"company_name": "Dubai Airports", "industry": "Aviation", "openings_estimate": 7, "location": "Dubai", "website": "dubaiairports.ae"},
+      {"company_name": "Mashreq", "industry": "Banking", "openings_estimate": 6, "location": "Dubai", "website": "mashreq.com"},
+      {"company_name": "ENOC", "industry": "Energy", "openings_estimate": 5, "location": "Dubai", "website": "enoc.com"},
+      {"company_name": "RAKBANK", "industry": "Banking", "openings_estimate": 5, "location": "Dubai", "website": "rakbank.ae"}
+    ],
+    "trend": {"current_window": 97, "previous_window": 81, "pct_change": 19.75},
+    "top_industries": [
+      {"industry": "Cybersecurity", "count": 18},
+      {"industry": "Banking", "count": 12},
+      {"industry": "Energy", "count": 9},
+      {"industry": "Telecom", "count": 8},
+      {"industry": "Aviation", "count": 6}
+    ],
+    "top_skills": [
+      {"skill": "SIEM", "count": 37},
+      {"skill": "Incident Response", "count": 33},
+      {"skill": "Network Security", "count": 31},
+      {"skill": "Python", "count": 24},
+      {"skill": "Threat Hunting", "count": 22},
+      {"skill": "Vulnerability Management", "count": 19}
+    ],
+    "data_source": "Crustdata (curated demo sample)",
+    "mode": "demo",
+    "updated_at_epoch_ms": 1738947600000,
+    "updated_at": "2026-02-07T09:00:00Z"
+  },
+  "product": {
+    "role_cluster": "product",
+    "region": "AE",
+    "window_days": 7,
+    "total_openings_estimate": 111,
+    "listings_or_companies_sample": [
+      {"company_name": "Careem", "industry": "Mobility", "openings_estimate": 16, "location": "Dubai", "website": "careem.com"},
+      {"company_name": "Noon", "industry": "E-commerce", "openings_estimate": 13, "location": "Dubai", "website": "noon.com"},
+      {"company_name": "Talabat", "industry": "FoodTech", "openings_estimate": 11, "location": "Dubai", "website": "talabat.com"},
+      {"company_name": "Dubizzle", "industry": "Marketplace", "openings_estimate": 10, "location": "Dubai", "website": "dubizzle.com"},
+      {"company_name": "Astra Tech", "industry": "Super App", "openings_estimate": 10, "location": "Abu Dhabi", "website": "astratech.ae"},
+      {"company_name": "Yalla Group", "industry": "Consumer Apps", "openings_estimate": 9, "location": "Dubai", "website": "yallagroup.com"},
+      {"company_name": "Bayzat", "industry": "InsurTech", "openings_estimate": 8, "location": "Dubai", "website": "bayzat.com"},
+      {"company_name": "Property Finder", "industry": "PropTech", "openings_estimate": 7, "location": "Dubai", "website": "propertyfinder.ae"},
+      {"company_name": "Mamo", "industry": "FinTech", "openings_estimate": 6, "location": "Dubai", "website": "mamo.com"},
+      {"company_name": "ENBD X", "industry": "Digital Banking", "openings_estimate": 5, "location": "Dubai", "website": "emiratesnbd.com"}
+    ],
+    "trend": {"current_window": 111, "previous_window": 96, "pct_change": 15.63},
+    "top_industries": [
+      {"industry": "E-commerce", "count": 12},
+      {"industry": "Mobility", "count": 10},
+      {"industry": "FinTech", "count": 9},
+      {"industry": "Marketplace", "count": 8},
+      {"industry": "Consumer Apps", "count": 7}
+    ],
+    "top_skills": [
+      {"skill": "Product Management", "count": 42},
+      {"skill": "Experimentation", "count": 31},
+      {"skill": "SQL", "count": 28},
+      {"skill": "Stakeholder Management", "count": 26},
+      {"skill": "Figma", "count": 24},
+      {"skill": "Roadmapping", "count": 20}
+    ],
+    "data_source": "Crustdata (curated demo sample)",
+    "mode": "demo",
+    "updated_at_epoch_ms": 1738947600000,
+    "updated_at": "2026-02-07T09:00:00Z"
+  }
+}

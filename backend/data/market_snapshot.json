@@ -1,49 +1,39 @@
 {
   "role_cluster": "data_analyst",
-  "region": "UAE",
+  "region": "AE",
   "window_days": 7,
-  "total_openings_estimate": 148,
+  "total_openings_estimate": 184,
   "listings_or_companies_sample": [
-    {
-      "company_name": "Noon",
-      "industry": "E-commerce",
-      "openings_estimate": 22,
-      "location": "Dubai",
-      "website": "noon.com"
-    },
-    {
-      "company_name": "Careem",
-      "industry": "Mobility",
-      "openings_estimate": 16,
-      "location": "Dubai",
-      "website": "careem.com"
-    },
-    {
-      "company_name": "ADNOC",
-      "industry": "Energy",
-      "openings_estimate": 12,
-      "location": "Abu Dhabi",
-      "website": "adnoc.ae"
-    }
+    {"company_name": "Noon", "industry": "E-commerce", "openings_estimate": 26, "location": "Dubai", "website": "noon.com"},
+    {"company_name": "Careem", "industry": "Mobility", "openings_estimate": 18, "location": "Dubai", "website": "careem.com"},
+    {"company_name": "Talabat", "industry": "FoodTech", "openings_estimate": 15, "location": "Dubai", "website": "talabat.com"},
+    {"company_name": "ADNOC", "industry": "Energy", "openings_estimate": 14, "location": "Abu Dhabi", "website": "adnoc.ae"},
+    {"company_name": "Mashreq", "industry": "Banking", "openings_estimate": 13, "location": "Dubai", "website": "mashreq.com"},
+    {"company_name": "Emirates NBD", "industry": "Banking", "openings_estimate": 12, "location": "Dubai", "website": "emiratesnbd.com"},
+    {"company_name": "DP World", "industry": "Logistics", "openings_estimate": 11, "location": "Dubai", "website": "dpworld.com"},
+    {"company_name": "Etisalat", "industry": "Telecom", "openings_estimate": 10, "location": "Abu Dhabi", "website": "eand.com"},
+    {"company_name": "Aster", "industry": "Healthcare", "openings_estimate": 9, "location": "Dubai", "website": "asterdmhealthcare.com"},
+    {"company_name": "Majid Al Futtaim", "industry": "Retail", "openings_estimate": 8, "location": "Dubai", "website": "majidalfuttaim.com"}
   ],
-  "trend": {
-    "current_window": 148,
-    "previous_window": 119,
-    "pct_change": 24.37
-  },
+  "trend": {"current_window": 184, "previous_window": 147, "pct_change": 25.17},
   "top_industries": [
-    {"industry": "E-commerce", "count": 12},
-    {"industry": "Financial Services", "count": 9},
-    {"industry": "Energy", "count": 6}
+    {"industry": "E-commerce", "count": 19},
+    {"industry": "Banking", "count": 15},
+    {"industry": "Logistics", "count": 12},
+    {"industry": "Energy", "count": 10},
+    {"industry": "Telecom", "count": 9}
   ],
   "top_skills": [
-    {"skill": "SQL", "count": 44},
-    {"skill": "Python", "count": 39},
-    {"skill": "Power BI", "count": 31},
-    {"skill": "Excel", "count": 27},
-    {"skill": "Tableau", "count": 21}
+    {"skill": "SQL", "count": 64},
+    {"skill": "Python", "count": 58},
+    {"skill": "Power BI", "count": 49},
+    {"skill": "Excel", "count": 44},
+    {"skill": "Tableau", "count": 41},
+    {"skill": "Statistics", "count": 31},
+    {"skill": "A/B Testing", "count": 26},
+    {"skill": "Data Storytelling", "count": 24}
   ],
-  "data_source": "Crustdata (cached demo sample)",
+  "data_source": "Crustdata (curated demo sample)",
   "mode": "demo",
   "updated_at_epoch_ms": 1738947600000,
   "updated_at": "2026-02-07T09:00:00Z"

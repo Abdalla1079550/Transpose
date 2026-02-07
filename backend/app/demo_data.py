@@ -22,3 +22,16 @@ def load_all_demo_payloads() -> dict[str, Any]:
         with path.open("r", encoding="utf-8") as file:
             result[path.name] = json.load(file)
     return result
+
+
+def load_demo_market_snapshot(role_cluster: str) -> dict[str, Any]:
+    role_key = role_cluster.strip().lower()
+    map_path = DATA_DIR / "market_snapshots.json"
+    if map_path.exists():
+        with map_path.open("r", encoding="utf-8") as file:
+            payload = json.load(file)
+        if isinstance(payload, dict):
+            specific = payload.get(role_key)
+            if isinstance(specific, dict):
+                return specific
+    return load_demo_json("market_snapshot.json")

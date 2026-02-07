@@ -137,6 +137,43 @@ class OutreachResponse(BaseModel):
     body: str
 
 
+class DemoEntityRef(BaseModel):
+    id: int
+    name: str
+
+
+class DemoRoleRef(BaseModel):
+    id: int
+    title: str
+    region: str | None = None
+
+
+class DemoShowcase(BaseModel):
+    student_id: int
+    role_id: int
+    region: str
+    role_cluster: str
+
+
+class DemoOutreachPreview(BaseModel):
+    role_id: int
+    role_title: str
+    student_id: int
+    student_name: str
+    subject: str
+    body: str
+
+
+class DemoBootstrapResponse(BaseModel):
+    ok: bool
+    dataset_version: str
+    seeded_at: str
+    students: list[DemoEntityRef]
+    roles: list[DemoRoleRef]
+    showcase: DemoShowcase
+    outreach_previews: list[DemoOutreachPreview]
+
+
 class DemoCachedResponse(BaseModel):
     payloads: dict[str, Any]
 

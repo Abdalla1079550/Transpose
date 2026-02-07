@@ -1,0 +1,141 @@
+{
+  "dataset_version": "2026-02-07.edge-demo.1",
+  "default_region": "AE",
+  "default_role_cluster": "data_analyst",
+  "students": [
+    {
+      "name": "Leena Al Mansoori",
+      "email": "leena.mansoori@example.edu",
+      "region_pref": "AE",
+      "grad_year": 2026,
+      "role_cluster": "data_analyst",
+      "target_role": "Data Analyst",
+      "skills": ["SQL", "Python", "Power BI", "Excel", "Data Analysis", "Communication"],
+      "cv_text": "Leena Al Mansoori\nBSc Information Systems, Khalifa University (2026)\nBuilt a retention analytics project for a retail app using SQL and Python, reducing churn prediction error by 23 percent.\nCreated executive Power BI dashboards for cohort conversion and funnel diagnostics.\nInternship at FinEdge Analytics: automated weekly KPI pack generation, saving 12 analyst hours per week.\nProjects include ETL quality monitoring, anomaly detection alerts, and stakeholder-ready reporting.",
+      "interview_answers": [
+        {"question": "Target role cluster(s)", "answer": "Data Analyst"},
+        {"question": "Location preference", "answer": "Dubai or Abu Dhabi"},
+        {"question": "Describe your best project", "answer": "Built a pricing elasticity model with Python and SQL and presented impact scenarios to leadership."},
+        {"question": "Describe the hardest bug/problem you solved", "answer": "Resolved timezone drift in event ingestion causing false drop-off in daily active users."},
+        {"question": "What new skill did you learn recently and how fast?", "answer": "Learned dbt fundamentals in two weeks and shipped one production transformation model."}
+      ]
+    },
+    {
+      "name": "Omar Haddad",
+      "email": "omar.haddad@example.edu",
+      "region_pref": "AE",
+      "grad_year": 2025,
+      "role_cluster": "software_engineer",
+      "target_role": "Software Engineer",
+      "skills": ["Python", "TypeScript", "React", "FastAPI", "PostgreSQL", "Docker"],
+      "cv_text": "Omar Haddad\nBEng Software Engineering, American University of Sharjah (2025)\nBuilt a full-stack customer support analytics platform with Next.js, FastAPI, and PostgreSQL.\nImplemented async job processing and reduced API response p95 by 37 percent.\nInternship at CloudScale: shipped internal deployment automation scripts and containerized services with Docker.\nStrong ownership across backend APIs, frontend state, and release checklists.",
+      "interview_answers": [
+        {"question": "Target role cluster(s)", "answer": "Software Engineer"},
+        {"question": "Location preference", "answer": "UAE or remote"},
+        {"question": "Describe your best project", "answer": "Architected a role-based access control system and audit trail for enterprise users."},
+        {"question": "Describe the hardest bug/problem you solved", "answer": "Tracked a memory leak to unbounded websocket listeners and fixed lifecycle cleanup."},
+        {"question": "What new skill did you learn recently and how fast?", "answer": "Learned distributed tracing with OpenTelemetry and integrated traces in one sprint."}
+      ]
+    },
+    {
+      "name": "Sana Qureshi",
+      "email": "sana.qureshi@example.edu",
+      "region_pref": "AE",
+      "grad_year": 2026,
+      "role_cluster": "product",
+      "target_role": "Associate Product Manager",
+      "skills": ["Product Management", "SQL", "Figma", "Communication", "Experimentation"],
+      "cv_text": "Sana Qureshi\nBBA Technology Management, University of Dubai (2026)\nLed discovery for a student wallet product, interviewed 42 users, and prioritized roadmap themes.\nDefined North Star metrics and shipped onboarding experiments that improved activation by 18 percent.\nBuilt SQL self-serve dashboard for PM and growth teams.\nComfortable turning ambiguous requirements into testable product hypotheses.",
+      "interview_answers": [
+        {"question": "Target role cluster(s)", "answer": "Product"},
+        {"question": "Location preference", "answer": "Dubai"},
+        {"question": "Describe your best project", "answer": "Launched a referral loop MVP with weekly experiment reviews and metric guardrails."},
+        {"question": "Describe a conflict and how you resolved it", "answer": "Aligned engineering and growth on phased scope by splitting launch into two milestones."},
+        {"question": "What new skill did you learn recently and how fast?", "answer": "Learned event taxonomy design and shipped tracking spec within 10 days."}
+      ]
+    },
+    {
+      "name": "Yousef Al Rashed",
+      "email": "yousef.rashed@example.edu",
+      "region_pref": "AE",
+      "grad_year": 2027,
+      "role_cluster": "cybersecurity",
+      "target_role": "Cybersecurity Analyst",
+      "skills": ["Cybersecurity", "Network Security", "Python", "SIEM", "Incident Response"],
+      "cv_text": "Yousef Al Rashed\nBSc Cybersecurity, Zayed University (2027)\nBuilt SOC incident triage playbooks and simulated phishing response workflows.\nAutomated log parsing scripts in Python to enrich alerts and reduce noise.\nHands-on exposure to SIEM dashboards, vulnerability scanning, and remediation tracking.\nStrong documentation and incident postmortem writing.",
+      "interview_answers": [
+        {"question": "Target role cluster(s)", "answer": "Cybersecurity"},
+        {"question": "Location preference", "answer": "Abu Dhabi"},
+        {"question": "Describe your best project", "answer": "Created endpoint hardening checklist and measured compliance uplift across lab systems."},
+        {"question": "Describe the hardest bug/problem you solved", "answer": "Fixed parser mismatch in log collector that dropped critical auth events."},
+        {"question": "What new skill did you learn recently and how fast?", "answer": "Learned Sigma rule tuning in one week and reduced false positives by 21 percent."}
+      ]
+    },
+    {
+      "name": "Maya Fernandez",
+      "email": "maya.fernandez@example.edu",
+      "region_pref": "AE",
+      "grad_year": 2025,
+      "role_cluster": "data_analyst",
+      "target_role": "Business Intelligence Analyst",
+      "skills": ["SQL", "Tableau", "Excel", "Python", "Storytelling"],
+      "cv_text": "Maya Fernandez\nBSc Applied Mathematics, NYU Abu Dhabi (2025)\nDeveloped Tableau executive scorecards for operations and finance.\nWrote SQL models for weekly margin and channel performance analysis.\nInterned at logistics startup and built route-efficiency dashboards used in weekly ops meetings.\nKnown for concise narratives and metric-first decision support.",
+      "interview_answers": [
+        {"question": "Target role cluster(s)", "answer": "Data Analyst"},
+        {"question": "Location preference", "answer": "UAE"},
+        {"question": "Describe your best project", "answer": "Modeled shipping delay drivers and cut average delay by prioritizing top 3 factors."},
+        {"question": "Describe a recent achievement and measurable impact", "answer": "Reduced manual reporting cycle from 3 days to 5 hours."},
+        {"question": "What new skill did you learn recently and how fast?", "answer": "Learned advanced window functions in one week and reworked two core reports."}
+      ]
+    },
+    {
+      "name": "Arjun Narayanan",
+      "email": "arjun.narayanan@example.edu",
+      "region_pref": "AE",
+      "grad_year": 2026,
+      "role_cluster": "software_engineer",
+      "target_role": "Backend Engineer",
+      "skills": ["Python", "FastAPI", "Redis", "PostgreSQL", "Docker", "Kubernetes"],
+      "cv_text": "Arjun Narayanan\nBSc Computer Science, Heriot-Watt University Dubai (2026)\nImplemented microservice APIs for marketplace inventory sync with retry-safe workers.\nOptimized query plans and caching strategy, reducing slow query count by 41 percent.\nDeployed services with container pipelines and health-check instrumentation.\nComfortable with API design, system debugging, and production readiness.",
+      "interview_answers": [
+        {"question": "Target role cluster(s)", "answer": "Software Engineer"},
+        {"question": "Location preference", "answer": "Dubai"},
+        {"question": "Describe your best project", "answer": "Built queue-based order reconciliation system with idempotent handlers."},
+        {"question": "Describe the hardest bug/problem you solved", "answer": "Diagnosed race condition causing duplicate writes under burst traffic."},
+        {"question": "What new skill did you learn recently and how fast?", "answer": "Learned Redis stream consumer groups and shipped in under two weeks."}
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "title": "Junior Data Analyst - Growth",
+      "region": "AE",
+      "raw_desc": "Own SQL analysis, KPI dashboards, stakeholder reporting, and experimentation support for growth team. Must convert ambiguous questions into measurable analyses.",
+      "skills_must": ["sql", "python", "power bi"],
+      "min_grad_year": 2025,
+      "max_grad_year": 2028,
+      "source_job_id": "CRUST-JOB-AE-DA-101",
+      "source_job_url": "https://example.jobs/ae/data-analyst-growth"
+    },
+    {
+      "title": "Associate Software Engineer - Platform",
+      "region": "AE",
+      "raw_desc": "Build backend APIs, integrate data services, maintain service reliability, and support rapid product launches. Strong ownership and code quality required.",
+      "skills_must": ["python", "fastapi", "postgresql", "docker"],
+      "min_grad_year": 2025,
+      "max_grad_year": 2028,
+      "source_job_id": "CRUST-JOB-AE-SE-204",
+      "source_job_url": "https://example.jobs/ae/associate-software-engineer"
+    },
+    {
+      "title": "Cybersecurity Analyst - SOC",
+      "region": "AE",
+      "raw_desc": "Monitor SIEM alerts, investigate incidents, harden detection rules, and collaborate with infrastructure teams on remediation planning.",
+      "skills_must": ["cybersecurity", "network security", "python"],
+      "min_grad_year": 2025,
+      "max_grad_year": 2029,
+      "source_job_id": "CRUST-JOB-AE-CY-309",
+      "source_job_url": "https://example.jobs/ae/cybersecurity-analyst-soc"
+    }
+  ]
+}

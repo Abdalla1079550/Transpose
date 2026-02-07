@@ -39,6 +39,7 @@ def _build_docx_bytes() -> bytes:
 
 def main() -> None:
     with TestClient(app) as client:
+        bootstrap = _assert_ok(client.post("/demo/bootstrap", params={"reset": "true"}))
         health = _assert_ok(client.get("/health"))
         snapshot = _assert_ok(
             client.get(
@@ -119,6 +120,7 @@ def main() -> None:
     print(
         {
             "health_mode": health.get("mode"),
+            "bootstrap_students": len(bootstrap.get("students", [])),
             "market_mode": snapshot.get("mode"),
             "questions_count": len(questions.get("questions", [])),
             "student_id": student_id,

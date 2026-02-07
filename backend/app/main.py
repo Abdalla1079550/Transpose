@@ -21,7 +21,8 @@ from .crustdata_client import (
 )
 from .cv_parser import CVParseError, parse_cv
 from .db import get_session, init_db
-from .demo_data import load_all_demo_payloads, load_demo_json
+from .demo_data import load_all_demo_payloads, load_demo_json, load_demo_market_snapshot
+from .demo_seed import bootstrap_demo_dataset
 from .market import build_market_snapshot
 from .matching import compute_match
 from .models import Match, RoleQuery, Student
@@ -30,6 +31,7 @@ from .schemas import (
     CandidateCardResponse,
     CrustDataSmokeResponse,
     DemoCachedResponse,
+    DemoBootstrapResponse,
     HealthResponse,
     InterviewQuestion,
     InterviewQuestionsResponse,
@@ -149,7 +151,7 @@ def _role_from_interview(student: Student) -> str:
 
 
 def _snapshot_from_demo(region: str, role_cluster: str, days: int, mode: str) -> MarketSnapshotResponse:
-    cached = load_demo_json("market_snapshot.json")
+    cached = load_demo_market_snapshot(role_cluster)
     cached["region"] = region
     cached["role_cluster"] = role_cluster
     cached["window_days"] = days
@@ -292,13 +294,13 @@ def student_card(
     market_ctx: dict[str, Any] | None = None
 
     if settings.demo_mode:
-        market_ctx = load_demo_json("market_snapshot.json")
+        market_ctx = load_demo_market_snapshot(role_cluster)
     else:
         client = get_crustdata_client()
         try:
             market_ctx = build_market_snapshot(client=client, region=region, role_cluster=role_cluster, days=7)
         except CrustDataError:
-            market_ctx = load_demo_json("market_snapshot.json")
+            market_ctx = load_demo_market_snapshot(role_cluster)
 
     card = generate_candidate_card(student=student, openai_helper=openai_helper, market_snapshot=market_ctx)
     student.card_json = serialize_card(card)
@@ -430,6 +432,15 @@ def role_outreach(
 @app.get("/demo/cached", response_model=DemoCachedResponse)
 def demo_cached() -> DemoCachedResponse:
     return DemoCachedResponse(payloads=load_all_demo_payloads())
+
+
+@app.post("/demo/bootstrap", response_model=DemoBootstrapResponse)
+def demo_bootstrap(
+    reset: bool = Query(default=True),
+    session: Session = Depends(get_session),
+) -> DemoBootstrapResponse:
+    payload = bootstrap_demo_dataset(session=session, openai_helper=openai_helper, reset=reset)
+    return DemoBootstrapResponse(**payload)
 
 
 @app.get("/crustdata/smoke-auth", response_model=CrustDataSmokeResponse)
