@@ -176,3 +176,10 @@ export function createRole(payload: Record<string, unknown>) {
 export function getRoleMatches(roleId: string) {
   return request<Record<string, unknown>>(`/roles/${roleId}/matches`);
 }
+
+export function createOutreachDraft(roleId: string, studentId: string) {
+  return request<Record<string, unknown>>(`/roles/${roleId}/outreach`, {
+    method: "POST",
+    body: JSON.stringify({ student_id: Number(studentId), tone: "professional" })
+  });
+}

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ErrorState } from "@/components/ErrorState";
 import { MatchList } from "@/components/MatchList";
 import { SurfaceCard } from "@/components/SurfaceCard";
-import { BACKEND_URL, createRole, getRoleMatches } from "@/lib/api";
-import type { MatchData } from "@/lib/types";
+import { BACKEND_URL, createOutreachDraft, createRole, getRoleMatches } from "@/lib/api";
+import type { MatchData, OutreachDraft } from "@/lib/types";
 
 type GenericRecord = Record<string, unknown>;
 
@@ -54,11 +54,14 @@ export default function EmployerPage() {
 
   const [roleId, setRoleId] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchData[]>([]);
+  const [outreachDraft, setOutreachDraft] = useState<OutreachDraft | null>(null);
+  const [generatingForStudentId, setGeneratingForStudentId] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
   const [matchesError, setMatchesError] = useState<string | null>(null);
+  const [outreachError, setOutreachError] = useState<string | null>(null);
 
   const fetchMatches = async (id: string) => {
     setMatchesError(null);
@@ -110,6 +113,22 @@ export default function EmployerPage() {
 
     setRoleId(id);
     await fetchMatches(id);
+  };
+
+  const generateOutreach = async (studentId: string) => {
+    if (!roleId) {
+      return;
+    }
+    setOutreachError(null);
+    setGeneratingForStudentId(studentId);
+    const result = await createOutreachDraft(roleId, studentId);
+    setGeneratingForStudentId(null);
+    if (!result.ok) {
+      setOutreachDraft(null);
+      setOutreachError(result.error);
+      return;
+    }
+    setOutreachDraft(result.data as OutreachDraft);
   };
 
   return (
@@ -176,7 +195,30 @@ export default function EmployerPage() {
         {!roleId && <p className="muted-copy">Submit role details to generate shortlist.</p>}
         {loadingMatches && <p className="muted-copy">Loading matches…</p>}
         {matchesError && roleId && <ErrorState compact message={matchesError} onRetry={() => fetchMatches(roleId)} />}
-        {!loadingMatches && !matchesError && <MatchList matches={matches} />}
+        {!loadingMatches && !matchesError && (
+          <MatchList
+            matches={matches}
+            onGenerateOutreach={generateOutreach}
+            generatingForStudentId={generatingForStudentId}
+          />
+        )}
+        {outreachError && <ErrorState compact message={outreachError} onRetry={() => setOutreachError(null)} />}
+      </SurfaceCard>
+
+      <SurfaceCard title="Outreach Draft" subtitle="Generated text only, no sending">
+        {!outreachDraft && <p className="muted-copy">Generate outreach from any shortlisted candidate.</p>}
+        {outreachDraft && (
+          <div className="question-stack">
+            <label className="field">
+              Subject
+              <textarea rows={2} value={outreachDraft.subject || ""} readOnly />
+            </label>
+            <label className="field">
+              Body
+              <textarea rows={8} value={outreachDraft.body || ""} readOnly />
+            </label>
+          </div>
+        )}
       </SurfaceCard>
     </div>
   );

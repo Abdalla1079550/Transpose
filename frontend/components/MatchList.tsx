@@ -3,9 +3,11 @@ import type { MatchData } from "@/lib/types";
 
 interface MatchListProps {
   matches: MatchData[];
+  onGenerateOutreach?: (studentId: string) => void;
+  generatingForStudentId?: string | null;
 }
 
-export function MatchList({ matches }: MatchListProps) {
+export function MatchList({ matches, onGenerateOutreach, generatingForStudentId }: MatchListProps) {
   if (matches.length === 0) {
     return <p className="muted-copy">No candidates matched this role yet.</p>;
   }
@@ -19,6 +21,7 @@ export function MatchList({ matches }: MatchListProps) {
         const evidence = asStringArray(match.evidence);
         const gaps = asStringArray(match.gap_flags);
         const key = String(match.student_id || match.id || index);
+        const studentId = String(match.student_id || "");
 
         return (
           <article key={key} className="match-card">
@@ -35,6 +38,16 @@ export function MatchList({ matches }: MatchListProps) {
               </ul>
             )}
             {gaps.length > 0 && <p className="line-detail">Gap flags: {gaps.join(", ")}</p>}
+            {onGenerateOutreach && studentId && (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => onGenerateOutreach(studentId)}
+                disabled={generatingForStudentId === studentId}
+              >
+                {generatingForStudentId === studentId ? "Generating…" : "Generate Outreach"}
+              </button>
+            )}
           </article>
         );
       })}

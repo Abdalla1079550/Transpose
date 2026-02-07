@@ -206,6 +206,18 @@ function toSignalItems(snapshot: SnapshotRecord): DisplayItem[] {
   return items;
 }
 
+function downloadText(filename: string, content: string, type: string): void {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export default function MarketTruthPage() {
   const [region, setRegion] = useState("AE");
   const [roleCluster, setRoleCluster] = useState("data_analyst");
@@ -267,6 +279,39 @@ export default function MarketTruthPage() {
   const source = inferSource(snapshot, health, usedDemoFallback);
   const lastUpdated = inferLastUpdated(snapshot, health);
 
+  const exportBriefJson = () => {
+    const payload = {
+      region,
+      role_cluster: roleCluster,
+      generated_at: new Date().toISOString(),
+      trend: snapshot.trend ?? {},
+      top_skills: snapshot.top_skills ?? [],
+      top_industries: snapshot.top_industries ?? []
+    };
+    downloadText(
+      `curriculum_gap_brief_${region}_${roleCluster}.json`,
+      JSON.stringify(payload, null, 2),
+      "application/json"
+    );
+  };
+
+  const exportBriefCsv = () => {
+    const skills = Array.isArray(snapshot.top_skills) ? snapshot.top_skills : [];
+    const rows = ["skill,count"];
+    for (const item of skills) {
+      const record = asRecord(item);
+      if (!record) {
+        continue;
+      }
+      const skill = typeof record.skill === "string" ? record.skill : "";
+      const count = record.count !== undefined ? String(record.count) : "0";
+      if (skill) {
+        rows.push(`${skill.replace(/,/g, " ")},${count}`);
+      }
+    }
+    downloadText(`curriculum_gap_brief_${region}_${roleCluster}.csv`, rows.join("\n"), "text/csv");
+  };
+
   return (
     <div className="page-stack">
       <section className="page-header">
@@ -281,9 +326,17 @@ export default function MarketTruthPage() {
         title="Snapshot Controls"
         subtitle="Tune region, role cluster, and time window"
         actions={
-          <button className="primary-button" onClick={() => setRefreshToken((v) => v + 1)} type="button">
-            Refresh
-          </button>
+          <div className="surface-actions">
+            <button className="ghost-button" onClick={exportBriefJson} type="button">
+              Export JSON
+            </button>
+            <button className="ghost-button" onClick={exportBriefCsv} type="button">
+              Export CSV
+            </button>
+            <button className="primary-button" onClick={() => setRefreshToken((v) => v + 1)} type="button">
+              Refresh
+            </button>
+          </div>
         }
       >
         <div className="meta-row">

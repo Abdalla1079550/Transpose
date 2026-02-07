@@ -13,7 +13,11 @@ _DEFAULT_DB_URL = f"sqlite:///{_BACKEND_DIR / 'edgematch.db'}"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", "../.env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_name: str = "EdgeMatch MVP"
     demo_mode: bool = False

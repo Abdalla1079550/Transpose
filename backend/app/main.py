@@ -38,6 +38,8 @@ from .schemas import (
     RoleCreateRequest,
     RoleCreateResponse,
     RoleMatchesResponse,
+    OutreachRequest,
+    OutreachResponse,
     StudentCreatedResponse,
     StudentInterviewRequest,
     StudentInterviewResponse,
@@ -375,6 +377,54 @@ def role_matches(
 
     ordered = sorted(response_items, key=lambda item: (item.hard_filter_passed, item.score), reverse=True)[:limit]
     return RoleMatchesResponse(role_id=role_id, total=len(ordered), matches=ordered)
+
+
+@app.post("/roles/{role_id}/outreach", response_model=OutreachResponse)
+def role_outreach(
+    role_id: int,
+    payload: OutreachRequest,
+    session: Session = Depends(get_session),
+) -> OutreachResponse:
+    role = session.get(RoleQuery, role_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found.")
+
+    student = session.get(Student, payload.student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found.")
+
+    match = session.exec(
+        select(Match).where(Match.role_query_id == role_id).where(Match.student_id == payload.student_id)
+    ).first()
+    if not match:
+        computed = compute_match(role, student, openai_helper)
+        rationale = computed.rationale
+        evidence = computed.evidence
+    else:
+        rationale = match.rationale
+        try:
+            evidence_raw = json.loads(match.evidence_json or "[]")
+            evidence = [str(item) for item in evidence_raw if isinstance(item, str)]
+        except json.JSONDecodeError:
+            evidence = []
+
+    subject = f"{role.title}: potential fit conversation"
+    body = openai_helper.generate_outreach(
+        role_title=role.title,
+        student_name=student.name,
+        rationale=rationale,
+        evidence=evidence,
+    )
+    if not body:
+        body = (
+            f"Hi {student.name},\n\n"
+            f"We reviewed your profile for our {role.title} opening and saw a strong alignment. "
+            f"{rationale} "
+            f"We would like to schedule a short conversation this week to discuss fit and next steps.\n\n"
+            "Best,\nRecruiting Team"
+        )
+
+    return OutreachResponse(role_id=role_id, student_id=payload.student_id, subject=subject, body=body)
 
 
 @app.get("/demo/cached", response_model=DemoCachedResponse)

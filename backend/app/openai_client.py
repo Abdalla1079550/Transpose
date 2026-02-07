@@ -79,3 +79,32 @@ class OpenAIHelper:
         except Exception as exc:  # noqa: BLE001
             logger.warning("Rationale generation failed: %s", exc.__class__.__name__)
             return None
+
+    def generate_outreach(self, role_title: str, student_name: str, rationale: str, evidence: list[str]) -> str | None:
+        if not self._client:
+            return None
+
+        prompt = (
+            "Write a concise recruiting email body under 120 words. "
+            "Tone: professional, specific, no hype, no placeholders."
+        )
+        context = {
+            "role_title": role_title,
+            "student_name": student_name,
+            "rationale": rationale,
+            "evidence": evidence[:3],
+        }
+        try:
+            response = self._client.chat.completions.create(
+                model=self.chat_model,
+                temperature=0.2,
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": json.dumps(context)},
+                ],
+            )
+            content = response.choices[0].message.content
+            return content.strip() if content else None
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Outreach generation failed: %s", exc.__class__.__name__)
+            return None

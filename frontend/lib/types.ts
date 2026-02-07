@@ -90,3 +90,10 @@ export interface MatchData {
   location?: string;
   [key: string]: unknown;
 }
+
+export interface OutreachDraft {
+  role_id?: number;
+  student_id?: number;
+  subject?: string;
+  body?: string;
+}

@@ -159,6 +159,8 @@ a {
 
 .surface-actions {
   display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .mode-indicator {

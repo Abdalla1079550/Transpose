@@ -107,6 +107,12 @@ def main() -> None:
         role_id = role["id"]
 
         matches = _assert_ok(client.get(f"/roles/{role_id}/matches", params={"include_failed": "true"}))
+        outreach = _assert_ok(
+            client.post(
+                f"/roles/{role_id}/outreach",
+                json={"student_id": student_id, "tone": "professional"},
+            )
+        )
         smoke = _assert_ok(client.get("/crustdata/smoke-auth"))
 
     print("Smoke test passed")
@@ -120,6 +126,7 @@ def main() -> None:
             "card_keys": sorted(card.get("card", {}).keys()),
             "role_id": role_id,
             "matches_total": matches.get("total"),
+            "outreach_subject": outreach.get("subject"),
             "smoke_mode": smoke.get("mode"),
         }
     )

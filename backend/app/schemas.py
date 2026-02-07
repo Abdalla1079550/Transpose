@@ -125,6 +125,18 @@ class RoleMatchesResponse(BaseModel):
     matches: list[MatchItem]
 
 
+class OutreachRequest(BaseModel):
+    student_id: int
+    tone: str = "professional"
+
+
+class OutreachResponse(BaseModel):
+    role_id: int
+    student_id: int
+    subject: str
+    body: str
+
+
 class DemoCachedResponse(BaseModel):
     payloads: dict[str, Any]
 

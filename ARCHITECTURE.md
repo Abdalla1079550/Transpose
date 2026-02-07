@@ -11,7 +11,7 @@
 - Web Fetch (`/screener/web-fetch`): `Authorization: Token <token>`
 - Company Search via Filters (`/screener/company/search`): `Authorization: Bearer <token>`
 
-Because docs show mixed schemes, backend client supports `token|bearer|auto` and can probe both without exposing secrets.
+Because docs show mixed schemes, backend client supports `token|bearer|auto`, probes both via `/crustdata/smoke-auth`, and remembers per-endpoint winning scheme.
 
 ### Endpoints Used
 
@@ -82,8 +82,16 @@ Because docs show mixed schemes, backend client supports `token|bearer|auto` and
 - `GET /students/{id}/card`
 - `POST /roles`
 - `GET /roles/{id}/matches`
+- `POST /roles/{id}/outreach`
 - `GET /demo/cached`
 - `GET /crustdata/smoke-auth`
+
+## Auth Scheme Chosen
+- Runtime mode: `auto` (recommended default)
+- Effective behavior after smoke probe:
+  - `/screener/company`, `/screener/web-search`, `/screener/web-fetch` => `Token <CRUSTDATA_TOKEN>`
+  - `/screener/company/search` => `Bearer <CRUSTDATA_TOKEN>`
+- Implementation stores successful scheme per endpoint path to reduce retries.
 
 ## Matching & Scoring
 1. Hard filters: location, grad year, must-have skills
@@ -97,4 +105,3 @@ Because docs show mixed schemes, backend client supports `token|bearer|auto` and
 ## Deployment/Demo Modes
 - `DEMO_MODE=0`: live Crustdata first, fallback per-route when upstream unavailable
 - `DEMO_MODE=1`: always use cached sample payloads
-
